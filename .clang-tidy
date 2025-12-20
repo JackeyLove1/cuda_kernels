@@ -1,0 +1,25 @@
+## Use the Google style in this project.
+#BasedOnStyle: Google
+#
+## Google Style uses "int& foo".
+#DerivePointerAlignment: false
+#PointerAlignment: Left
+#
+## Google Style uses "const int" (West Const).
+#QualifierAlignment: Left
+#
+## Explicitly ensure braces are attached for control statements (e.g. for loops).
+#BreakBeforeBraces: Attach
+#
+#ColumnLimit: 100
+#IncludeBlocks: Merge
+#
+## Format raw string literals with a `pb` or `proto` tag as proto.
+#RawStringFormats:
+#  - Language: TextProto
+#    Delimiters:
+#      - "pb"
+#      - "proto"
+#    BasedOnStyle: Google
+#
+#CommentPragmas: "(@copydoc|@copybrief|@see)"
