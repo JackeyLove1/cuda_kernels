@@ -8,7 +8,8 @@ set(CMAKE_CUDA_STANDARD 17)
 set(CMAKE_CUDA_STANDARD_REQUIRED ON)
 
 add_compile_options(-O3)
-
+# Only apply -use_fast_math to CUDA code, not C++ code
+add_compile_options($<$<COMPILE_LANGUAGE:CUDA>:-use_fast_math>)
 # Provide a reasonable default if user didn't set it.
 # You can override at configure time, e.g.:
 #   cmake -S . -B build -DCMAKE_CUDA_ARCHITECTURES=86
@@ -76,3 +77,6 @@ add_executable(fast_atomic_add 19-fast-atomic-add.cu)
 add_executable(relu_1 20-relu.cu)
 add_executable(relu_2 21-relu.cu)
 add_executable(dot_1 22-dot-production.cu)
+add_executable(sigmoid_1 23-sigmoid.cu)
+add_executable(silu_1 24-silu.cu)
+add_executable(sigmoid_2 25-sigmoid-2.cu)
