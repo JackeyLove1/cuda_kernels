@@ -11,35 +11,40 @@
 __global__ __launch_bounds__(512) void relu_kernel(float *__restrict__ input, float *__restrict__ output, const int N)
 {
     const int idx = blockIdx.x * blockDim.x + threadIdx.x;
-    // Process 4 floats per thread
-    int stride_idx = idx * 4;
+    const int stride = blockDim.x * gridDim.x;
 
-    // Check if we can process a full vector of 4
-    if (stride_idx + 4 <= N) {
-        const float4 x = FLOAT4(input[stride_idx]);
-        float4       y;
-        y.x                        = fmaxf(0.0f, x.x);
-        y.y                        = fmaxf(0.0f, x.y);
-        y.z                        = fmaxf(0.0f, x.z);
-        y.w                        = fmaxf(0.0f, x.w);
-        FLOAT4(output[stride_idx]) = y;
-    }
-    else {
-        // Handle remaining elements or out-of-bounds threads
-        for (int i = stride_idx; i < N; ++i) {
-            output[i] = fmaxf(0.0f, input[i]);
+    // Grid-Stride Loop over float4 vectors
+    // i represents the index of the float4 vector
+    for (int i = idx; i * 4 < N; i += stride) {
+        // Check if the full float4 is within bounds
+        if ((i + 1) * 4 <= N) {
+            float4 v = reinterpret_cast<float4*>(input)[i];
+            v.x = fmaxf(0.0f, v.x);
+            v.y = fmaxf(0.0f, v.y);
+            v.z = fmaxf(0.0f, v.z);
+            v.w = fmaxf(0.0f, v.w);
+            reinterpret_cast<float4*>(output)[i] = v;
+        } else {
+            // Handle remaining elements (1, 2, or 3 floats)
+            // These are contiguous at the end of the array, so we increment by 1
+            int offset = i * 4;
+            for (int j = offset; j < N; ++j) {
+                output[j] = fmaxf(0.0f, input[j]);
+            }
         }
     }
 }
 
-// input, output are device pointers (i.e. pointers to memory on the GPU)
 extern "C" void solve(float *input, float *output, int N)
 {
     int threadsPerBlock = 256;
-    int num_threads     = (N + 3) / 4;
-    int blocksPerGrid   = (num_threads + threadsPerBlock - 1) / threadsPerBlock;
+    // We process 4 elements per thread logic roughly, but grid stride handles any size
+    int num_blocks = (N / 4 + threadsPerBlock - 1) / threadsPerBlock;
+    // Cap grid size to avoid overhead for very large N if needed, but here simple calculation is fine
+    if (num_blocks > 65535) num_blocks = 65535; // Optional protection
+    if (num_blocks == 0) num_blocks = 1;
 
-    relu_kernel<<<blocksPerGrid, threadsPerBlock>>>(input, output, N);
+    relu_kernel<<<num_blocks, threadsPerBlock>>>(input, output, N);
     cudaDeviceSynchronize();
 }
 
@@ -116,8 +121,3 @@ int main()
 
     return 0;
 }
-
-/**
-Time: 0.398 ms
-Bandwidth: 674.81 GB/s
- */
