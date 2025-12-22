@@ -1,7 +1,3 @@
-//
-// Created by root on 12/21/25.
-//
-
 #include <cstdio>
 #include <cstdlib>
 #include <cmath>
