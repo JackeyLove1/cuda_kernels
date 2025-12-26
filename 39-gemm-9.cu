@@ -240,7 +240,7 @@ extern "C" void solve(const float *A, const float *B, float *C, int M, int N, in
 int main(int argc, char **argv)
 {
 
-    int M = 2048;
+    int M = 4096;
     int N = 4096;
     int K = 4096;
 
@@ -308,7 +308,8 @@ int main(int argc, char **argv)
 }
 
 /**
-Average Runtime: 3.987906 ms
-Compute Performance: 17.231968 TFLOPS
-Max Error (Sample): 0.617554
+Benchmarking Optimized SGEMM with BK=32, PAD=4
+Average Runtime: 8.640020 ms
+Compute Performance: 15.907249 TFLOPS
+Max Error (Sample): 1035.041626
  **/

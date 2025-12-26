@@ -255,7 +255,7 @@ void verify_result(float *h_A, float *h_B, float *h_C, int M, int N, int K) {
 
 int main(int argc, char **argv)
 {
-    int M = 2048;
+    int M = 4096;
     int N = 4096;
     int K = 4096;
 
@@ -340,8 +340,9 @@ int main(int argc, char **argv)
 }
 
 /**
-Verification PASSED (checked 1000 random elements). Max Error: 0.000183
-Average Runtime: 5.287733 ms
-Compute Performance: 12.996018 TFLOPS
-Memory Bandwidth: 25.382849 GB/s
+Benchmarking cuBLAS SGEMM with M=4096, N=4096, K=4096
+Verification PASSED (checked 1000 random elements). Max Error: 0.000122
+Average Runtime: 10.354175 ms
+Compute Performance: 13.273772 TFLOPS
+Memory Bandwidth: 19.444002 GB/s
  **/

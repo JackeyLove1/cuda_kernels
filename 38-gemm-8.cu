@@ -290,7 +290,7 @@ extern "C" void solve(const float *A, const float *B, float *C, int M, int N, in
     dim3 threads(THREADS_PER_BLOCK);
     dim3 blocks(CDIV(N, BN), CDIV(M, BM));
 
-    printf("Launching Ampere CP Async GEMM with Block=[%d,%d], ThreadTile=[%d,%d], K_step=%d\n", BM, BN, TM, TN, BK);
+    // printf("Launching Ampere CP Async GEMM with Block=[%d,%d], ThreadTile=[%d,%d], K_step=%d\n", BM, BN, TM, TN, BK);
 
     // 需要足够大的 Shared Memory。
     // Size = 2 * (BM*BK + BK*BN) * sizeof(float)
@@ -333,7 +333,7 @@ void verify_result(float *h_A, float *h_B, float *h_C, int M, int N, int K) {
 
 int main(int argc, char **argv)
 {
-    int M = 2048;
+    int M = 4096;
     int N = 4096;
     int K = 4096;
 
@@ -418,7 +418,9 @@ int main(int argc, char **argv)
 }
 
 /**
-Average Runtime: 5.924270 ms
-Compute Performance: 11.599653 TFLOPS
-Memory Bandwidth: 22.655572 GB/s
+Benchmarking cuBLAS SGEMM with M=4096, N=4096, K=4096
+Verification PASSED (checked 1000 random elements). Max Error: 0.000122
+Average Runtime: 11.551423 ms
+Compute Performance: 11.898011 TFLOPS
+Memory Bandwidth: 17.428726 GB/s
  **/
