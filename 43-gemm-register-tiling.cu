@@ -229,7 +229,9 @@ void verify_result(float *h_A, float *h_B, float *h_C, int M, int N, int K) {
 }
 
 int main(int argc, char **argv) {
-    int M = 2048, N = 1024, K = 4096;
+    int M = 2048;
+    int N = 1024;
+    int K = 4096;
     size_t size_A = M * K * sizeof(float);
     size_t size_B = K * N * sizeof(float);
     size_t size_C = M * N * sizeof(float);
@@ -277,3 +279,9 @@ int main(int argc, char **argv) {
     return 0;
 }
 
+/**
+Avg Time: 1.232230 ms
+TFLOPS: 13.942091
+Verifying result...
+Verification PASSED. Max Error: 3.112793e-03
+ */

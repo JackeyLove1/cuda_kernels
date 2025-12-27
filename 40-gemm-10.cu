@@ -53,8 +53,8 @@ extern "C" void solve(const float *A, const float *B, float *C, int M, int N, in
 
 int main(int argc, char **argv)
 {
-    int M = 4096;
-    int N = 4096;
+    int M = 2048;
+    int N = 1024;
     int K = 4096;
 
     printf("Benchmarking SGEMM with M=%d, N=%d, K=%d\n", M, N, K);
@@ -131,8 +131,8 @@ int main(int argc, char **argv)
 }
 
 /**
-Benchmarking cuBLAS SGEMM with M=2048, N=4096, K=4096
-Average Runtime: 44.334274 ms
-Compute Performance: 1.550030 TFLOPS
-Memory Bandwidth: 3.027403 GB/s
+Benchmarking SGEMM with M=2048, N=1024, K=4096
+Average Runtime: 10.736814 ms
+Compute Performance: 1.600090 TFLOPS
+Memory Bandwidth: 5.469058 GB/s
  */

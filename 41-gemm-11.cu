@@ -122,8 +122,8 @@ void verify_result(float *h_A, float *h_B, float *h_C, int M, int N, int K) {
 
 int main(int argc, char **argv)
 {
-    int M = 4096;
-    int N = 4096;
+    int M = 2048;
+    int N = 1024;
     int K = 4096;
 
     printf("Benchmarking cuBLAS SGEMM with M=%d, N=%d, K=%d\n", M, N, K);
@@ -206,9 +206,10 @@ int main(int argc, char **argv)
 }
 
 /**
+Benchmarking cuBLAS SGEMM with M=2048, N=1024, K=4096
 Verifying result...
 Verification PASSED (checked 1000 random elements). Max Error: 3.112793e-03
-Average Runtime: 44.730717 ms
-Compute Performance: 3.072586 TFLOPS
-Memory Bandwidth: 4.500858 GB/s
+Average Runtime: 4.686795 ms
+Compute Performance: 3.665590 TFLOPS
+Memory Bandwidth: 12.528873 GB/s
  */

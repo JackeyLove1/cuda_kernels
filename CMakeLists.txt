@@ -8,6 +8,8 @@ set(CMAKE_CUDA_STANDARD 17)
 set(CMAKE_CUDA_STANDARD_REQUIRED ON)
 
 add_compile_options(-O3)
+add_compile_options(-g)
+add_compile_options($<$<COMPILE_LANGUAGE:CUDA>:-G>)
 # Only apply -use_fast_math to CUDA code, not C++ code
 add_compile_options($<$<COMPILE_LANGUAGE:CUDA>:-use_fast_math>)
 # Provide a reasonable default if user didn't set it.
@@ -101,3 +103,4 @@ add_executable(gemm_13 42-gemm-12.cu)
 add_executable(cublas_benchmark cublas_benchmark.cu)
 target_link_libraries(cublas_benchmark PRIVATE CUDA::cudart CUDA::cublas)
 add_executable(gemm_14 43-gemm-register-tiling.cu)
+add_executable(gemm_15 44-gemm-13.cu)

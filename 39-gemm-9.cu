@@ -240,8 +240,8 @@ extern "C" void solve(const float *A, const float *B, float *C, int M, int N, in
 int main(int argc, char **argv)
 {
 
-    int M = 4096;
-    int N = 4096;
+    int M = 2048;
+    int N = 1024;
     int K = 4096;
 
     printf("Benchmarking Optimized SGEMM with BK=%d, PAD=%d\n", BK, PAD);

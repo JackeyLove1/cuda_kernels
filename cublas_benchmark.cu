@@ -53,8 +53,8 @@ void verify_result(float *h_A, float *h_B, float *h_C, int M, int N, int K) {
 }
 
 int main(int argc, char **argv) {
-    int M = 4096;
-    int N = 4096;
+    int M = 2048;
+    int N = 1024;
     int K = 4096;
 
     printf("Benchmarking cuBLAS SGEMM (SimT / CUDA Core) with M=%d, N=%d, K=%d\n", M, N, K);
@@ -168,8 +168,8 @@ int main(int argc, char **argv) {
 }
 
 /**
-Benchmarking cuBLAS SGEMM (SimT / CUDA Core) with M=4096, N=4096, K=4096
-Average Runtime: 6.223667 ms
-Compute Performance: 22.083275 TFLOPS
-Memory Bandwidth: 32.348547 GB/s
+Benchmarking cuBLAS SGEMM (SimT / CUDA Core) with M=2048, N=1024, K=4096
+Average Runtime: 0.856986 ms
+Compute Performance: 20.046858 TFLOPS
+Memory Bandwidth: 68.519534 GB/s
  */

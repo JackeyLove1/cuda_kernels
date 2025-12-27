@@ -1,11 +1,11 @@
+#include <cassert>
+#include <cmath>
 #include <cstdio>
 #include <cstdlib>
 #include <cuda_runtime.h>
-#include <cmath>
-#include <cassert>
 
 #define WARP_SIZE 32
-#define TILE 32
+#define TILE      32
 
 template <typename T, typename U> __host__ __device__ __forceinline__ auto CDIV(T a, U b) { return (a + b - 1) / b; }
 
@@ -19,100 +19,109 @@ template <typename T, typename U> __host__ __device__ __forceinline__ auto CDIV(
     }
 
 
-template <const int BM=32, const int BN=32, const int BK=8, const int TM=4>
-__global__ void matrix_multiplication_kernel(const float * A,
-                                             const float * B,
-                                             float * C,
-                                             const int M,
-                                             const int N,
-                                             const int K)
+template <const int BM = 32, const int BN = 128, const int BK = 32, const int TM = 4, const int TN = 4>
+__global__ void
+matrix_multiplication_kernel(const float *A, const float *B, float *C, const int M, const int N, const int K)
 {
-    assert(BM * BK == blockDim.x);
-    assert(BK * BN == blockDim.x);
-    assert(BM % TM == 0);
-    assert(BM * BN == TM * blockDim.x);
-
+    assert(BN % TN == 0);
+    assert(BM * BN == blockDim.x * (TM * TN));
 
     const auto cCol = blockIdx.x;
     const auto cRow = blockIdx.y;
 
-    __shared__ __align__(128) float As[BM * BK];
-    __shared__ __align__(128) float Bs[BK * BN];
+    const auto totalResultsBlockTile  = BM * BN;
+    const auto numThreadsPerBlockTile = totalResultsBlockTile / (TM * TN);
 
-    // advance the pointer to block tile
+    // calculation thread Idx
+    const auto threadCol = threadIdx.x % (BN / TN);
+    const auto threadRow = threadIdx.x / (BN / TN);
+
+    // move the A Row , B Col and C Row/Col
     A += cRow * BM * K;
     B += cCol * BN;
     C += cRow * BM * N + cCol * BN;
 
-
-    float threadResults[TM] = {0.f};
-
-    // copy thread location
+    // copy thread Idx
     const auto innerACol = threadIdx.x % BK;
     const auto innerARow = threadIdx.x / BK;
+    const auto strideA   = numThreadsPerBlockTile / BK;
+
     const auto innerBCol = threadIdx.x % BN;
     const auto innerBRow = threadIdx.x / BN;
+    const auto strideB   = numThreadsPerBlockTile / BN;
 
-    // compute thread location
-    const auto threadRow = threadIdx.x / BN;
-    const auto threadCol = threadIdx.x % BN;
+    __shared__ float As[BM * BK];
+    __shared__ float Bs[BK * BN];
+    float            regM[TM]               = {0.f};
+    float            regN[TN]               = {0.f};
+    float            threadResults[TM * TN] = {0.f};
 
-    // traverse the K to calculate the C block Tile
-    // 1. copy the A and B to share memory
-    // 2. copy B warp tile to register
-    // 3. traverse As to multiply B resigter to threadResult
-    // 4. write back threadResult to C
     for (int bk = 0; bk < K; bk += BK) {
-        As[innerARow * BK + innerACol] = A[innerARow * K + innerACol];
-        Bs[innerBRow * BN + innerBCol] = B[innerBRow * N + innerBCol];
+        // 1. load A and B to shared memory by stride
+        // 2. move the A and B to thread tile
+        // 3. move As Bs to register
+        for (auto loadOffset = 0; loadOffset < BM; loadOffset += strideA) {
+            As[(innerARow + loadOffset) * BK + innerACol] = A[(innerARow + loadOffset) * K + innerACol];
+        }
+        for (auto loadOffset = 0; loadOffset < BK; loadOffset += strideB) {
+            Bs[(innerBRow + loadOffset) * BN + innerBCol] = B[(innerBRow + loadOffset) * N + innerBCol];
+        }
         __syncthreads();
-
-        // Advanced A and B point
         A += BK;
         B += BK * N;
 
         for (int dotk = 0; dotk < BK; ++dotk) {
-            float tmpB = Bs[dotk * BN + threadCol];
-            for (int resIdx = 0; resIdx < TM; ++resIdx) {
-                threadResults[resIdx] +=
-                    As[(threadRow * TM + resIdx) * BK + dotk] * tmpB;
+            for (int i = 0; i < TM; ++i) {
+                regM[i] = As[(threadRow * TM + i) * BK + dotk];
+            }
+            for (int i = 0; i < TN; ++i) {
+                regN[i] = Bs[dotk * BN + threadCol * TN + i];
+            }
+            for (int resIdxM = 0; resIdxM < TM; ++resIdxM) {
+                for (int resIdxN = 0; resIdxN < TN; ++resIdxN) {
+                    threadResults[resIdxM * TN + resIdxN] += regM[resIdxM] * regN[resIdxN];
+                }
             }
         }
         __syncthreads();
     }
 
-    for (int resIdx = 0; resIdx < TM; ++resIdx) {
-        C[(threadRow * TM + resIdx) * N + threadCol] = threadResults[resIdx];
+    for (int resIdxM = 0; resIdxM < TM; ++resIdxM) {
+        for (int resIdxN = 0; resIdxN < TN; ++resIdxN) {
+            C[(threadRow * TM + resIdxM) * N + threadCol * TN + resIdxN] = threadResults[resIdxM * TN + resIdxN];
+        }
     }
-
 }
 
 // A: M x K, B: K x N, C: M x N
 extern "C" void solve(const float *A, const float *B, float *C, int M, int N, int K)
 {
-    constexpr int BS = 32;
+    constexpr int BM = 32;
+    constexpr int BN = 128;
 
     dim3 threadsPerBlock(256); // 1024 线程覆盖 32x32 输出
-    dim3 blocksPerGrid(CDIV(N, BS), CDIV(M, BS));
+    dim3 blocksPerGrid(CDIV(N, BN), CDIV(M, BM));
 
     matrix_multiplication_kernel<<<blocksPerGrid, threadsPerBlock>>>(A, B, C, M, N, K);
     cudaDeviceSynchronize();
 }
 
-void verify_result(float *h_A, float *h_B, float *h_C, int M, int N, int K) {
+void verify_result(float *h_A, float *h_B, float *h_C, int M, int N, int K)
+{
     printf("Verifying result...\n");
-    float max_error = 0.0f;
-    int error_count = 0;
+    float max_error   = 0.0f;
+    int   error_count = 0;
     // 随机检查 1000 个点以节省 CPU 时间
     for (int i = 0; i < 1000; ++i) {
-        int row = rand() % M;
-        int col = rand() % N;
+        int    row = rand() % M;
+        int    col = rand() % N;
         double sum = 0.0; // 使用 double 保证基准计算精度
         for (int k = 0; k < K; ++k) {
             sum += (double)h_A[row * K + k] * (double)h_B[k * N + col];
         }
         float diff = std::abs(h_C[row * N + col] - (float)sum);
-        if (diff > max_error) max_error = diff;
+        if (diff > max_error)
+            max_error = diff;
 
         // 设定容差，对于大规模累加，浮点数误差是正常的
         if (diff > 1e-2f) {
@@ -124,7 +133,8 @@ void verify_result(float *h_A, float *h_B, float *h_C, int M, int N, int K) {
     }
     if (error_count == 0) {
         printf("Verification PASSED (checked 1000 random elements). Max Error: %e\n", max_error);
-    } else {
+    }
+    else {
         printf("Verification FAILED. Total errors: %d, Max Error: %e\n", error_count, max_error);
     }
 }
@@ -215,11 +225,5 @@ int main(int argc, char **argv)
 }
 
 /**
-/root/autodl-tmp/cuda/cmake-build-debug/gemm_13
-Benchmarking cuBLAS SGEMM with M=2048, N=1024, K=4096
-Verifying result...
-Verification PASSED (checked 1000 random elements). Max Error: 3.112793e-03
-Average Runtime: 3.138407 ms
-Compute Performance: 5.474073 TFLOPS
-Memory Bandwidth: 18.710211 GB/s
+
  */
