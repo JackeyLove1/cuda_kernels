@@ -18,13 +18,26 @@ template <typename T, typename U> __host__ __device__ __forceinline__ auto CDIV(
         }                                                                                                             \
     }
 
+constexpr static int BLOCK_M = 128;
+constexpr static int BLOCK_N = 128;
+constexpr static int THREAD_NUMS = 256;
+constexpr static int BLOCK_K = 8;
+constexpr static int TILE_M = 8;
+constexpr static int TILE_N = 8;
 
-template <const int BM = 32, const int BN = 128, const int BK = 32, const int TM = 4, const int TN = 4>
+template <const int BM = BLOCK_M, const int BN = BLOCK_N, const int BK = BLOCK_K, const int TM = TILE_M, const int TN = TILE_N>
 __global__ void
-matrix_multiplication_kernel(const float *A, const float *B, float *C, const int M, const int N, const int K)
+matrix_multiplication_kernel(float *A, float *B, float *C, const int M, const int N, const int K)
 {
     assert(BN % TN == 0);
     assert(BM * BN == blockDim.x * (TM * TN));
+    // for load float4
+    assert(BM == BN);
+    assert(BM % 4 == 0);
+    assert(BK % 4 == 0);
+    assert(BN % 4 == 0);
+    assert(BM * BK == 4 * blockDim.x);
+    assert(BK * BN == 4 * blockDim.x);
 
     const auto cCol = blockIdx.x;
     const auto cRow = blockIdx.y;
@@ -42,13 +55,13 @@ matrix_multiplication_kernel(const float *A, const float *B, float *C, const int
     C += cRow * BM * N + cCol * BN;
 
     // copy thread Idx
-    const auto innerACol = threadIdx.x % BK;
-    const auto innerARow = threadIdx.x / BK;
-    const auto strideA   = numThreadsPerBlockTile / BK;
+    const auto innerACol = threadIdx.x % (BK / 4);
+    const auto innerARow = threadIdx.x / (BK / 4);
+    const auto strideA   = numThreadsPerBlockTile / (BK / 4);
 
-    const auto innerBCol = threadIdx.x % BN;
-    const auto innerBRow = threadIdx.x / BN;
-    const auto strideB   = numThreadsPerBlockTile / BN;
+    const auto innerBCol = threadIdx.x % (BN / 4);
+    const auto innerBRow = threadIdx.x / (BN / 4);
+    const auto strideB   = numThreadsPerBlockTile / (BN / 4);
 
     __shared__ float As[BM * BK];
     __shared__ float Bs[BK * BN];
@@ -61,10 +74,12 @@ matrix_multiplication_kernel(const float *A, const float *B, float *C, const int
         // 2. move the A and B to thread tile
         // 3. move As Bs to register
         for (auto loadOffset = 0; loadOffset < BM; loadOffset += strideA) {
-            As[(innerARow + loadOffset) * BK + innerACol] = A[(innerARow + loadOffset) * K + innerACol];
+            auto tmp = reinterpret_cast<float4*>(&A[(innerARow + loadOffset) * K + innerACol * 4])[0];
+            reinterpret_cast<float4 *>(&As[(innerARow + loadOffset) * BK + innerACol * 4])[0] = tmp;
         }
         for (auto loadOffset = 0; loadOffset < BK; loadOffset += strideB) {
-            Bs[(innerBRow + loadOffset) * BN + innerBCol] = B[(innerBRow + loadOffset) * N + innerBCol];
+            auto tmp = reinterpret_cast<float4*>(&B[(innerBRow + loadOffset) * N + innerBCol * 4])[0];
+            reinterpret_cast<float4*>(&Bs[(innerBRow + loadOffset) * BN + innerBCol * 4])[0] = tmp;
         }
         __syncthreads();
         A += BK;
@@ -87,20 +102,19 @@ matrix_multiplication_kernel(const float *A, const float *B, float *C, const int
     }
 
     for (int resIdxM = 0; resIdxM < TM; ++resIdxM) {
-        for (int resIdxN = 0; resIdxN < TN; ++resIdxN) {
-            C[(threadRow * TM + resIdxM) * N + threadCol * TN + resIdxN] = threadResults[resIdxM * TN + resIdxN];
+        for (int resIdxN = 0; resIdxN < (TN / 4); ++resIdxN) {
+            auto tmp = reinterpret_cast<float4*>(&threadResults[resIdxM * TN + resIdxN * 4])[0];
+            reinterpret_cast<float4*>(&C[(threadRow * TM + resIdxM) * N + threadCol * TN + resIdxN * 4])[0] = tmp;
         }
     }
 }
 
 // A: M x K, B: K x N, C: M x N
-extern "C" void solve(const float *A, const float *B, float *C, int M, int N, int K)
+extern "C" void solve(float *A, float *B, float *C, int M, int N, int K)
 {
-    constexpr int BM = 32;
-    constexpr int BN = 128;
 
-    dim3 threadsPerBlock(256); // 1024 线程覆盖 32x32 输出
-    dim3 blocksPerGrid(CDIV(N, BN), CDIV(M, BM));
+    dim3 threadsPerBlock(THREAD_NUMS);
+    dim3 blocksPerGrid(CDIV(N, BLOCK_N), CDIV(M, BLOCK_M));
 
     matrix_multiplication_kernel<<<blocksPerGrid, threadsPerBlock>>>(A, B, C, M, N, K);
     cudaDeviceSynchronize();
@@ -228,7 +242,7 @@ int main(int argc, char **argv)
 Benchmarking cuBLAS SGEMM with M=2048, N=1024, K=4096
 Verifying result...
 Verification PASSED (checked 1000 random elements). Max Error: 3.112793e-03
-Average Runtime: 1.573653 ms
-Compute Performance: 10.917190 TFLOPS
-Memory Bandwidth: 37.314613 GB/s
+Average Runtime: 1.351321 ms
+Compute Performance: 12.713387 TFLOPS
+Memory Bandwidth: 43.453958 GB/s
  */
