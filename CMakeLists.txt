@@ -30,6 +30,7 @@ find_package(CUDAToolkit REQUIRED)
 include_directories(
   /root/autodl-tmp/cutlass-main/include
   /root/autodl-tmp/cutlass-main/tools/util/include
+        /root/autodl-tmp/cutlass-mai/examples/common
 )
 
 add_executable(cublas1
@@ -108,3 +109,6 @@ add_executable(gemm_16 45-gemm-1.cu)
 add_executable(gemm_17 46-gemm-15.cu)
 add_executable(gemm_18 47-gemm-16.cu)
 add_executable(gemm_19 48-gemm-17.cu)
+add_executable(wgemm_1 49-wgemm-1.cu)
+add_executable(cutlass_1 50-cutlass-01.cu)
+add_executable(cutlass_2 51-cutlass-02.cu)
