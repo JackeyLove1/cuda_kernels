@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run lint)",
+      "Bash(npm run test:*)"
+    ],
+    "deny": [
+      "Bash(curl:*)"
+    ]
+  },
+  "env": {
+    "CLAUDE_CODE_ENABLE_TELEMETRY": "1",
+    "ANTHROPIC_BASE_URL": "https://api.qinzhiai.com/",
+    "ANTHROPIC_AUTH_TOKEN": "sk-BhyESLqVHEipJ04br35buTIP3DJp4TW59N3BDFOtR5abOUy8"
+  }
+}

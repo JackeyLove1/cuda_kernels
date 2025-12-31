@@ -28,10 +28,13 @@ find_package(CUDAToolkit REQUIRED)
 
 # Cutlass includes
 include_directories(
+  # ${CMAKE_CURRENT_SOURCE_DIR}
   /root/autodl-tmp/cutlass-main/include
   /root/autodl-tmp/cutlass-main/tools/util/include
-        /root/autodl-tmp/cutlass-mai/examples/common
+  /root/autodl-tmp/cutlass-main/examples/common
 )
+
+
 
 add_executable(cublas1
   cublas1.cu
@@ -112,3 +115,6 @@ add_executable(gemm_19 48-gemm-17.cu)
 add_executable(wgemm_1 49-wgemm-1.cu)
 add_executable(cutlass_1 50-cutlass-01.cu)
 add_executable(cutlass_2 51-cutlass-02.cu)
+add_executable(cutlass_3 52-cutlass-03.cu)
+target_link_libraries(cutlass_3 PRIVATE CUDA::cudart CUDA::cublas)
+add_executable(cute_1 53-cutlass-04.cu)
