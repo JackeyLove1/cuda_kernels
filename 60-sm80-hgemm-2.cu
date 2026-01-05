@@ -72,6 +72,12 @@ gemm_device(ProblemShape shape_MNK, CtaTiler cta_tiler,
   // Get the appropriate blocks for this thread block
   auto cta_coord = make_coord(blockIdx.x, blockIdx.y, _);              // (m,n,k)
   Tensor gA = local_tile(mA, cta_tiler, cta_coord, Step<_1, X,_1>{});  // (BLK_M,BLK_K,k)
+#if 0
+  {
+    print("gA: \n");print(gA);print("\n======\n");
+    print_layout(gA(_, _, 0).layout());
+  }
+#endif
   Tensor gB = local_tile(mB, cta_tiler, cta_coord, Step< X,_1,_1>{});  // (BLK_N,BLK_K,k)
   Tensor gC = local_tile(mC, cta_tiler, cta_coord, Step<_1,_1, X>{});  // (BLK_M,BLK_N)
 
@@ -154,7 +160,7 @@ gemm_device(ProblemShape shape_MNK, CtaTiler cta_tiler,
   Tensor tXsB = s2r_thr_copy_b.partition_S(sB);                        // (CPY,MMA_N,MMA_K,PIPE)
   Tensor tXrB = s2r_thr_copy_b.retile_D(tCrB);                         // (CPY,MMA_N,MMA_K)
 
-#if 1
+#if 0
   if(thread0()) {
     print("  mA : "); print(  mA); print("\n");
     print("  gA : "); print(  gA); print("\n");
@@ -315,6 +321,7 @@ gemm_tn(int m, int n, int k,
   // bP=4 requires 128KB (128*64*2 * 2 * 4 bytes), which fails.
   // bP=3 requires 96KB, which fits.
   auto bP = Int<BP>{};  // Pipeline
+  CUTE_STATIC_ASSERT((BM + BN) * BK * sizeof(cute::half_t) * BP < 100 * 1024); // 3080 max share memory is 100KB
 
   // Define the smem layouts (static)
   // Swizzles for LDSM and 128b k-major loads
@@ -341,16 +348,28 @@ gemm_tn(int m, int n, int k,
 
   // Define the thread layouts (static)
 
-  TiledCopy copyA = make_tiled_copy(Copy_Atom<SM80_CP_ASYNC_CACHEALWAYS<uint128_t>, cute::half_t>{},
-                                    Layout<Shape<_16,_8>,Stride<_8,_1>>{},  // Thr layout 16x8 k-major
-                                    Layout<Shape< _1,_8>>{});               // Val layout  1x8 k-major
-  TiledCopy copyB = make_tiled_copy(Copy_Atom<SM80_CP_ASYNC_CACHEALWAYS<uint128_t>, cute::half_t>{},
-                                    Layout<Shape<_16,_8>,Stride<_8,_1>>{},  // Thr layout 16x8 k-major
-                                    Layout<Shape< _1,_8>>{});               // Val layout  1x8 n-major
-
   TiledMMA mmaC = make_tiled_mma(SM80_16x8x16_F16F16F16F16_TN{},
                                  Layout<Shape<_2,_2>>{},    // 2x2x1 MMA Atoms
                                  Tile<_32,_32,_16>{});      // 32x32x16 Tiled MMA for LDSM
+
+  static constexpr auto NumThreads = size(mmaC);
+
+  // calculate the CopyA layout by num threads
+  static constexpr auto ThrK = (BK >= 64) ? 8 : (BK / 8);
+  static constexpr auto ThrM = NumThreads / ThrK;
+  static constexpr auto ThrN = NumThreads / ThrK;
+  CUTE_STATIC_ASSERT(BK % 8 == 0);
+  CUTE_STATIC_ASSERT(ThrK * ThrM == NumThreads);
+
+  TiledCopy copyA = make_tiled_copy(Copy_Atom<SM80_CP_ASYNC_CACHEALWAYS<uint128_t>, cute::half_t>{},
+                                   Layout<Shape<Int<ThrM>,Int<ThrK>>,Stride<Int<ThrK>,_1>>{},  // Thr layout ThrM * ThrK k-major
+                                   Layout<Shape< _1,_8>>{});               // Val layout  1x8 k-major
+
+
+  TiledCopy copyB = make_tiled_copy(Copy_Atom<SM80_CP_ASYNC_CACHEALWAYS<uint128_t>, cute::half_t>{},
+                                      Layout<Shape<Int<ThrN>, Int<ThrK>>,Stride<Int<ThrK>,_1>>{},  // Thr layout 16x8 k-major
+                                      Layout<Shape< _1,_8>>{});               // Val layout  1x8 n-major
+
 
   //Copy_Atom<DefaultCopy, half_t> s2r_atom_A;
   //Copy_Atom<UniversalCopy<half_t>, half_t> s2r_atom_A;
@@ -520,9 +539,12 @@ int main(int argc, char** argv)
         const char* name;
     };
 
-    run_config(cute::Int<128>{}, cute::Int<128>{}, cute::Int<64>{}, cute::Int<3>{}, "Original");
-    run_config(cute::Int<64>{},  cute::Int<64>{},  cute::Int<64>{}, cute::Int<4>{}, "Balanced");
-    // run_config(cute::Int<128>{}, cute::Int<128>{}, cute::Int<64>{}, cute::Int<3>{}, "version3");
+    // run_config(cute::Int<128>{}, cute::Int<128>{}, cute::Int<64>{}, cute::Int<3>{}, "Original");
+    // run_config(cute::Int<64>{},  cute::Int<64>{},  cute::Int<64>{}, cute::Int<4>{}, "Balanced");
+    // run_config(cute::Int<128>{}, cute::Int<64>{}, cute::Int<64>{}, cute::Int<4>{}, "version3");
+    // run_config(cute::Int<64>{}, cute::Int<64>{}, cute::Int<64>{}, cute::Int<5>{}, "version3");
+    // run_config(cute::Int<64>{}, cute::Int<64>{}, cute::Int<64>{}, cute::Int<6>{}, "version3");
+    run_config(cute::Int<128>{}, cute::Int<256>{}, cute::Int<64>{}, cute::Int<2>{}, "version4");
 
   return 0;
 }
@@ -532,6 +554,7 @@ int main(int argc, char** argv)
 # version 1
 CUTE_GEMM:     [80479.8]GFlop/s  (2.6684)ms
 
-# version 2
-
+# version 4
+Config: version4 BM: 128 BN:256 BK:64 BP:2
+CUTE_GEMM:     [99317.5]GFlop/s  (2.1622)ms
  **/
