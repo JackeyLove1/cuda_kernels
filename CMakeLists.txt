@@ -1,7 +1,28 @@
 cmake_minimum_required(VERSION 3.18)
 
+# ============================================================================
+# How to configure and build this project:
+#
+# From WSL/Linux terminal:
+#   cmake -DCMAKE_BUILD_TYPE=Debug \
+#         -DCMAKE_CUDA_COMPILER=/usr/local/cuda/bin/nvcc \
+#         -DCMAKE_CUDA_ARCHITECTURES=86 \
+#         -G "Unix Makefiles" \
+#         -S /mnt/c/Software/Codes/cuda/cuda_kernels \
+#         -B /mnt/c/Software/Codes/cuda/cuda_kernels/cmake-build-debug
+#
+#   cmake --build /mnt/c/Software/Codes/cuda/cuda_kernels/cmake-build-debug
+#
+# Or use CMake presets (see CMakePresets.json):
+#   cmake --preset debug
+#   cmake --build --preset debug
+#
+# Note: Use /usr/local/cuda instead of /usr/local/cuda-X.Y to avoid path issues
+# ============================================================================
+
 project(cuda_examples LANGUAGES CXX CUDA)
 
+enable_language(CUDA)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CUDA_STANDARD 17)
@@ -15,23 +36,27 @@ add_compile_options($<$<COMPILE_LANGUAGE:CUDA>:-use_fast_math>)
 # Provide a reasonable default if user didn't set it.
 # You can override at configure time, e.g.:
 #   cmake -S . -B build -DCMAKE_CUDA_ARCHITECTURES=86
-if(NOT DEFINED CMAKE_CUDA_ARCHITECTURES)
-  set(CMAKE_CUDA_ARCHITECTURES 86)
-endif()
+ if(NOT DEFINED CMAKE_CUDA_ARCHITECTURES)
+   set(CMAKE_CUDA_ARCHITECTURES 80)
+ endif()
 
 # Force update if it is set to the old default 52 (Maxwell) which doesn't support scoped atomics
 if(CMAKE_CUDA_ARCHITECTURES STREQUAL "52")
     set(CMAKE_CUDA_ARCHITECTURES 86 CACHE STRING "CUDA architectures" FORCE)
 endif()
 
+# Find Threads package (required by CUDAToolkit on some systems)
+set(THREADS_PREFER_PTHREAD_FLAG ON)
+find_package(Threads REQUIRED)
+
 find_package(CUDAToolkit REQUIRED)
 
 # Cutlass includes
 include_directories(
   # ${CMAKE_CURRENT_SOURCE_DIR}
-  /root/autodl-tmp/cutlass-main/include
-  /root/autodl-tmp/cutlass-main/tools/util/include
-  /root/autodl-tmp/cutlass-main/examples/common
+  /mnt/c/Software/Codes/cuda/cutlass/include
+  /mnt/c/Software/Codes/cuda/cutlass/tools/util/include
+  /mnt/c/Software/Codes/cuda/cutlass/examples/common
 )
 
 
@@ -125,3 +150,9 @@ add_executable(cublas_1 57-cublas-fp16.cu)
 target_link_libraries(cublas_1 PRIVATE CUDA::cudart CUDA::cublas)
 add_executable(cute_5 58-hgemm.cu)
 add_executable(cute_6 59-sm80-hgemm-1.cu)
+
+find_package(OpenMP REQUIRED)
+add_executable(openmp_1 60-openmp-01.cpp)
+if(OpenMP_CXX_FOUND)
+    target_link_libraries(openmp_1 PUBLIC OpenMP::OpenMP_CXX)
+endif()

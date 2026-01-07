@@ -57,6 +57,7 @@ __global__ void matrix_transpose_optimized(
     if (x < rows && y < cols) { // 注意 rows/cols 在输出矩阵中也是互换的
         output[y * rows + x] = tile[threadIdx.x][threadIdx.y];
     }
+
 }
 
 extern "C" void solve(const float* input, float* output, int rows, int cols) {
