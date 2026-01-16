@@ -3,21 +3,15 @@ cmake_minimum_required(VERSION 3.18)
 # ============================================================================
 # How to configure and build this project:
 #
-# From WSL/Linux terminal:
+# From WSL/Linux or Windows terminal:
 #   cmake -DCMAKE_BUILD_TYPE=Debug \
-#         -DCMAKE_CUDA_COMPILER=/usr/local/cuda/bin/nvcc \
 #         -DCMAKE_CUDA_ARCHITECTURES=86 \
-#         -G "Unix Makefiles" \
-#         -S /mnt/c/Software/Codes/cuda/cuda_kernels \
-#         -B /mnt/c/Software/Codes/cuda/cuda_kernels/cmake-build-debug
+#         -S . \
+#         -B build
 #
-#   cmake --build /mnt/c/Software/Codes/cuda/cuda_kernels/cmake-build-debug
+#   cmake --build build
 #
-# Or use CMake presets (see CMakePresets.json):
-#   cmake --preset debug
-#   cmake --build --preset debug
-#
-# Note: Use /usr/local/cuda instead of /usr/local/cuda-X.Y to avoid path issues
+# Note: On Windows, make sure NVCC is in your PATH or set CMAKE_CUDA_COMPILER.
 # ============================================================================
 
 project(cuda_examples LANGUAGES CXX CUDA)
@@ -28,9 +22,6 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CUDA_STANDARD 17)
 set(CMAKE_CUDA_STANDARD_REQUIRED ON)
 
-add_compile_options(-O3)
-# add_compile_options(-g)
-# add_compile_options($<$<COMPILE_LANGUAGE:CUDA>:-G>)
 # Only apply -use_fast_math to CUDA code, not C++ code
 add_compile_options($<$<COMPILE_LANGUAGE:CUDA>:-use_fast_math>)
 # Provide a reasonable default if user didn't set it.
@@ -44,7 +35,6 @@ add_compile_options($<$<COMPILE_LANGUAGE:CUDA>:-use_fast_math>)
 if(CMAKE_CUDA_ARCHITECTURES STREQUAL "52")
     set(CMAKE_CUDA_ARCHITECTURES 86 CACHE STRING "CUDA architectures" FORCE)
 endif()
-
 # Find Threads package (required by CUDAToolkit on some systems)
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
@@ -52,12 +42,22 @@ find_package(Threads REQUIRED)
 find_package(CUDAToolkit REQUIRED)
 
 # Cutlass includes
-include_directories(
-  # ${CMAKE_CURRENT_SOURCE_DIR}
-  /mnt/c/Software/Codes/cuda/cutlass/include
-  /mnt/c/Software/Codes/cuda/cutlass/tools/util/include
-  /mnt/c/Software/Codes/cuda/cutlass/examples/common
-)
+if(NOT DEFINED CUTLASS_DIR)
+  # Default to local 3rdparty/cutlass directory
+  set(CUTLASS_DIR "${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/cutlass")
+endif()
+
+if(EXISTS "${CUTLASS_DIR}/include")
+  include_directories(
+    ${CUTLASS_DIR}/include
+    ${CUTLASS_DIR}/tools/util/include
+    ${CUTLASS_DIR}/examples/common
+  )
+  message(STATUS "CUTLASS found at: ${CUTLASS_DIR}")
+else()
+  message(WARNING "CUTLASS NOT found at: ${CUTLASS_DIR}. Some targets might fail to build.")
+endif()
+
 
 
 
@@ -77,11 +77,11 @@ target_link_libraries(sorting PRIVATE
 )
 
 # Nice-to-have warnings for the host compiler
-if (MSVC)
-  target_compile_options(cublas1 PRIVATE /W4)
-else()
-  target_compile_options(cublas1 PRIVATE -Wall -Wextra -Wpedantic)
-endif()
+#if (MSVC)
+#  target_compile_options(cublas1 PRIVATE /W4)
+#else()
+#  target_compile_options(cublas1 PRIVATE -Wall -Wextra -Wpedantic)
+#endif()
 
 
 add_executable(helloworld 01-helloworld.cu)
@@ -156,3 +156,18 @@ add_executable(openmp_1 60-openmp-01.cpp)
 if(OpenMP_CXX_FOUND)
     target_link_libraries(openmp_1 PUBLIC OpenMP::OpenMP_CXX)
 endif()
+
+# In your CMakeLists.txt
+set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} --extended-lambda")
+add_executable(cub_1 61-cub-device-reduce.cu)
+target_compile_options(cub_1 PRIVATE $<$<COMPILE_LANGUAGE:CUDA>:--extended-lambda>)
+target_link_libraries(cub_1 PRIVATE CUDA::cudart)
+
+add_executable(cub_2 62-cub-2.cu)
+add_executable(cut_gemm_1 63-cutlass-gemm.cu)
+add_executable(cut_gemm_2 64-cutlass-gemm.cu)
+add_executable(cut_gemm_3 65-cutlass-gemm.cu)
+add_executable(cut_gemm_4 66-cutlass-gemm.cu)
+target_compile_options(cut_gemm_4 PRIVATE -lineinfo)
+
+add_executable(hello_1 67-hello.cpp)

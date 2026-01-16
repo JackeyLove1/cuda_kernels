@@ -34,3 +34,5 @@ Makefile
 .DS_Store
 
 3rdparty/
+ncu/
+nsys/
