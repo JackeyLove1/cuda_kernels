@@ -171,3 +171,8 @@ add_executable(cut_gemm_4 66-cutlass-gemm.cu)
 target_compile_options(cut_gemm_4 PRIVATE -lineinfo)
 
 add_executable(hello_1 67-hello.cpp)
+add_executable(cut_gemm_5 68-cutlass-gemm.cu)
+add_executable(cut_gemm_6 69-cutlass-gemm.cu)
+target_link_libraries(cut_gemm_6 PRIVATE
+        CUDA::cudart
+        CUDA::cublas)
