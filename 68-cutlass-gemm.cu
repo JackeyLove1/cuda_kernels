@@ -3,7 +3,8 @@
 #include <cute/tensor.hpp>
 
 
-int main() {
+int main()
+{
     using namespace cute;
     auto shape = Shape<_3, Shape<_2, _3>>{};
     print(shape);print("\n");
@@ -29,6 +30,15 @@ int main() {
     print("\nB:\n");print_layout(B);print("\n");
     print_layout(R);print("\n");
 
+    auto layout_2 = make_layout(Shape<_4, Shape<_2, _2>>{}, Stride<_2, Stride<_1,_8>>{});
+    print_layout(layout_2);print("\n");
 
+    auto layout3 = Layout<Shape<Shape<_4, _2>, _4>, Stride<Stride<_8, _4>, _1>>{};
+    print_layout(layout3);print("\n");
+
+    using SM80_16x8_Row = Layout<Shape <Shape < _4,_8>,Shape < _2,_2>>,
+                             Stride<Stride<_32,_1>,Stride<_16,_8>>>;
+    print_layout(SM80_16x8_Row{});print("\n");
+    print_latex(SM80_16x8_Row{})print("\n");
 
 }

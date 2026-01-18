@@ -69,7 +69,7 @@ int main()
                         make_layout(Shape<_2, _2, _1>{}),
                         make_layout(Shape<_1, _1, _1>{})));
 
-    print_latex(MMA{});
+    // print_latex(MMA{});
 
     constexpr int kTileM = 128;
     constexpr int kTileN = 128;
@@ -84,6 +84,11 @@ int main()
         //     thrust::raw_pointer_cast(db.data()),
         //     m, n, k);
     }
+
+    using SM80_16x8_Row = Layout<Shape <Shape < _4,_8>,Shape < _2,_2>>,
+                             Stride<Stride<_32,_1>,Stride<_16,_8>>>;
+    // print_layout(SM80_16x8_Row{});print("\n");
+    // print_latex(SM80_16x8_Row{});print("\n");
 
 
 }
