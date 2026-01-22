@@ -22,6 +22,9 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CUDA_STANDARD 17)
 set(CMAKE_CUDA_STANDARD_REQUIRED ON)
 
+set(CMAKE_PREFIX_PATH "/opt/libtorch")
+find_package(Torch REQUIRED)
+
 # Only apply -use_fast_math to CUDA code, not C++ code
 add_compile_options($<$<COMPILE_LANGUAGE:CUDA>:-use_fast_math>)
 # Provide a reasonable default if user didn't set it.
@@ -35,6 +38,10 @@ add_compile_options($<$<COMPILE_LANGUAGE:CUDA>:-use_fast_math>)
 if(CMAKE_CUDA_ARCHITECTURES STREQUAL "52")
     set(CMAKE_CUDA_ARCHITECTURES 86 CACHE STRING "CUDA architectures" FORCE)
 endif()
+
+# Add current source directory to include path so all targets can access headers like cuda_array.h
+include_directories(${CMAKE_CURRENT_SOURCE_DIR})
+
 # Find Threads package (required by CUDAToolkit on some systems)
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
@@ -176,3 +183,27 @@ add_executable(cut_gemm_6 69-cutlass-gemm.cu)
 target_link_libraries(cut_gemm_6 PRIVATE
         CUDA::cudart
         CUDA::cublas)
+
+find_package(pybind11 REQUIRED)
+pybind11_add_module(hello 70-py-bind.cpp)
+pybind11_add_module(pet 71-py-pet.cpp)
+
+pybind11_add_module(cubind1 73-py-cuarray-bind.cpp 72-py-cuarray.cu)
+set_target_properties(cubind1 PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
+target_link_libraries(cubind1 PRIVATE CUDA::cudart)
+
+add_executable(torch1 74-libtorch-1.cu)
+#
+# Libtorch: find_package(Torch) does NOT automatically add include paths to every target.
+# Wire Torch into targets that actually use it so both builds and IDE tooling (compile_commands.json)
+# can see <torch/...> headers.
+target_link_libraries(torch1 PRIVATE ${TORCH_LIBRARIES})
+target_include_directories(torch1 PRIVATE ${TORCH_INCLUDE_DIRS})
+
+add_executable(cute_8 75-cute-gemm.cu)
+target_link_libraries(cute_8 PRIVATE CUDA::cudart)
+
+add_executable(cute_9 76-cute-copy.cu)
+add_executable(cute_10 77-cute-gemm.cu)
+add_executable(cute_11 78-cute-gemm.cu)
+add_executable(cute_12 79-cute-gemm.cu)

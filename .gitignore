@@ -27,7 +27,7 @@ Makefile
 *.fatbin
 
 # Editor/IDE files
-.vscode/
+# .vscode/
 .idea/
 *.swp
 *~
