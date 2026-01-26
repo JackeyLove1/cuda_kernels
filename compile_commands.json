@@ -496,5 +496,23 @@
   "command": "/usr/local/cuda/bin/nvcc -forward-unknown-to-host-compiler -I/mnt/c/Software/Codes/cuda/cuda_kernels -I/mnt/c/Software/Codes/cuda/cuda_kernels/3rdparty/cutlass/include -I/mnt/c/Software/Codes/cuda/cuda_kernels/3rdparty/cutlass/tools/util/include -I/mnt/c/Software/Codes/cuda/cuda_kernels/3rdparty/cutlass/examples/common  --extended-lambda -g -std=c++17 \"--generate-code=arch=compute_86,code=[compute_86,sm_86]\" -use_fast_math -x cu -c /mnt/c/Software/Codes/cuda/cuda_kernels/79-cute-gemm.cu -o CMakeFiles/cute_12.dir/79-cute-gemm.cu.o",
   "file": "/mnt/c/Software/Codes/cuda/cuda_kernels/79-cute-gemm.cu",
   "output": "CMakeFiles/cute_12.dir/79-cute-gemm.cu.o"
+},
+{
+  "directory": "/mnt/c/Software/Codes/cuda/cuda_kernels/build",
+  "command": "/usr/local/cuda/bin/nvcc -forward-unknown-to-host-compiler -I/mnt/c/Software/Codes/cuda/cuda_kernels -I/mnt/c/Software/Codes/cuda/cuda_kernels/3rdparty/cutlass/include -I/mnt/c/Software/Codes/cuda/cuda_kernels/3rdparty/cutlass/tools/util/include -I/mnt/c/Software/Codes/cuda/cuda_kernels/3rdparty/cutlass/examples/common  --extended-lambda -g -std=c++17 \"--generate-code=arch=compute_86,code=[compute_86,sm_86]\" -use_fast_math -x cu -c /mnt/c/Software/Codes/cuda/cuda_kernels/80-cute-gemm.cu -o CMakeFiles/cute_13.dir/80-cute-gemm.cu.o",
+  "file": "/mnt/c/Software/Codes/cuda/cuda_kernels/80-cute-gemm.cu",
+  "output": "CMakeFiles/cute_13.dir/80-cute-gemm.cu.o"
+},
+{
+  "directory": "/mnt/c/Software/Codes/cuda/cuda_kernels/build",
+  "command": "/usr/local/cuda/bin/nvcc -forward-unknown-to-host-compiler -I/mnt/c/Software/Codes/cuda/cuda_kernels -I/mnt/c/Software/Codes/cuda/cuda_kernels/3rdparty/cutlass/include -I/mnt/c/Software/Codes/cuda/cuda_kernels/3rdparty/cutlass/tools/util/include -I/mnt/c/Software/Codes/cuda/cuda_kernels/3rdparty/cutlass/examples/common  --extended-lambda -g -std=c++17 \"--generate-code=arch=compute_86,code=[compute_86,sm_86]\" -use_fast_math -x cu -c /mnt/c/Software/Codes/cuda/cuda_kernels/81-cute-gemm.cu -o CMakeFiles/cute_14.dir/81-cute-gemm.cu.o",
+  "file": "/mnt/c/Software/Codes/cuda/cuda_kernels/81-cute-gemm.cu",
+  "output": "CMakeFiles/cute_14.dir/81-cute-gemm.cu.o"
+},
+{
+  "directory": "/mnt/c/Software/Codes/cuda/cuda_kernels/build",
+  "command": "/usr/local/cuda/bin/nvcc -forward-unknown-to-host-compiler -I/mnt/c/Software/Codes/cuda/cuda_kernels -I/mnt/c/Software/Codes/cuda/cuda_kernels/3rdparty/cutlass/include -I/mnt/c/Software/Codes/cuda/cuda_kernels/3rdparty/cutlass/tools/util/include -I/mnt/c/Software/Codes/cuda/cuda_kernels/3rdparty/cutlass/examples/common -isystem /usr/local/cuda/targets/x86_64-linux/include  --extended-lambda -g -std=c++17 \"--generate-code=arch=compute_86,code=[compute_86,sm_86]\" -use_fast_math -x cu -c /mnt/c/Software/Codes/cuda/cuda_kernels/82-cute-gemm.cu -o CMakeFiles/cute_15.dir/82-cute-gemm.cu.o",
+  "file": "/mnt/c/Software/Codes/cuda/cuda_kernels/82-cute-gemm.cu",
+  "output": "CMakeFiles/cute_15.dir/82-cute-gemm.cu.o"
 }
 ]
