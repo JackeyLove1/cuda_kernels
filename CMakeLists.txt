@@ -214,3 +214,9 @@ target_link_libraries(cute_15 PRIVATE CUDA::cudart CUDA::cublas)
 
 add_executable(torch2 83-print-tensor.cu)
 target_link_libraries(torch2 PRIVATE ${TORCH_LIBRARIES})
+
+add_executable(blackwell1 84-blackwell-1.cu)
+add_executable(flashinfer1 85-flashinfer-1.cu)
+add_executable(flashinfer2 86-flashinfer2.cu)
+
+include_directories(${PROJECT_SOURCE_DIR}/include)

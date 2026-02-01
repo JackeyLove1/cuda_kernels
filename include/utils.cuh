@@ -1,18 +1,25 @@
-
+#pragma once
 
 #ifndef CUDA_EXAMPLES_UTILS_CUH
 #define CUDA_EXAMPLES_UTILS_CUH
 
+#define BLOCK_THREADS 256
+
 constexpr static auto FULL_MASK = 0xFFFFFFFF;
 
 template <typename T>
-__forceinline__ __device__ warpReduceSum(T val)
+__forceinline__ __device__ T warpReduceSum(T val)
 {
     #pragma unroll
     for (int offset = warpSize / 2; offset > 0; offset >>= 1)
     {
         val += __shfl_down_sync(FULL_MASK, val, offset);
     }
+}
+
+template <typename T, typename U>
+static __forceinline__ auto ceil_div(const T a, const U b) {
+    return static_cast<T>((a + b -1) / b);
 }
 
 #define CUDA_CHECK(expr_to_check) do {            \
