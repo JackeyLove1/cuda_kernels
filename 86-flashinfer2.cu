@@ -5,7 +5,7 @@
 #include <thrust/device_vector.h>
 #include <thrust/host_vector.h>
 #include <cub/cub.cuh>
-
+#include <cutlass/fast_math.h>
 #include "utils.cuh"
 
 __global__ void permuteKernel(float f_val) {

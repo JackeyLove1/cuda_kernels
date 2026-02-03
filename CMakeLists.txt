@@ -27,17 +27,39 @@ find_package(Torch REQUIRED)
 
 # Only apply -use_fast_math to CUDA code, not C++ code
 add_compile_options($<$<COMPILE_LANGUAGE:CUDA>:-use_fast_math>)
-# Provide a reasonable default if user didn't set it.
-# You can override at configure time, e.g.:
-#   cmake -S . -B build -DCMAKE_CUDA_ARCHITECTURES=86
- if(NOT DEFINED CMAKE_CUDA_ARCHITECTURES)
-   set(CMAKE_CUDA_ARCHITECTURES 80)
- endif()
+
+# Emit line-number info for profiling/debugging (CUDA only)
+add_compile_options($<$<COMPILE_LANGUAGE:CUDA>:-lineinfo>)
+
+# ============================================================================
+# 警告控制 (Warning Control)
+# ============================================================================
+# 方案1: 禁用所有警告（最激进）
+# add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-w>)
+# add_compile_options($<$<COMPILE_LANGUAGE:CUDA>:-w>)
+
+# 方案2: 禁用CUDA主机编译器的警告（推荐）
+add_compile_options($<$<COMPILE_LANGUAGE:CUDA>:-Xcompiler=-w>)
+
+# NOTE:
+# - Hardcoding SM120 breaks non-Blackwell builds and can also lead to runtime
+#   CUTLASS "arch conditional MMA instruction" asserts if the generated code
+#   doesn't match the required __CUDA_ARCH__.
+if(NOT CMAKE_CUDA_ARCHITECTURES)
+  # Prefer "native" when supported so the build matches the installed GPU.
+  # (If your CMake is older and doesn't understand "native" for CUDA archs,
+  # fall back to a conservative default.)
+  if(CMAKE_VERSION VERSION_GREATER_EQUAL "3.24")
+    set(CMAKE_CUDA_ARCHITECTURES native)
+  else()
+    set(CMAKE_CUDA_ARCHITECTURES 120)
+  endif()
+endif()
 
 # Force update if it is set to the old default 52 (Maxwell) which doesn't support scoped atomics
-if(CMAKE_CUDA_ARCHITECTURES STREQUAL "52")
-    set(CMAKE_CUDA_ARCHITECTURES 86 CACHE STRING "CUDA architectures" FORCE)
-endif()
+#if(CMAKE_CUDA_ARCHITECTURES STREQUAL "52")
+#    set(CMAKE_CUDA_ARCHITECTURES 86 CACHE STRING "CUDA architectures" FORCE)
+#endif()
 
 # Add current source directory to include path so all targets can access headers like cuda_array.h
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
@@ -215,8 +237,22 @@ target_link_libraries(cute_15 PRIVATE CUDA::cudart CUDA::cublas)
 add_executable(torch2 83-print-tensor.cu)
 target_link_libraries(torch2 PRIVATE ${TORCH_LIBRARIES})
 
-add_executable(blackwell1 84-blackwell-1.cu)
+# Blackwell SM120 examples - only build if targeting that architecture
+if(CMAKE_CUDA_ARCHITECTURES MATCHES "120|121")
+  add_executable(blackwell1 84-blackwell-1.cu)
+  add_executable(flashinfer4 88-flashinfer4.cu)
+  message(STATUS "Building Blackwell SM120 examples (blackwell1, flashinfer4)")
+else()
+  message(STATUS "Skipping Blackwell SM120 examples - requires compute capability 120+, current: ${CMAKE_CUDA_ARCHITECTURES}")
+endif()
+
+# Regular flashinfer examples (work on any modern GPU)
 add_executable(flashinfer1 85-flashinfer-1.cu)
 add_executable(flashinfer2 86-flashinfer2.cu)
 
 include_directories(${PROJECT_SOURCE_DIR}/include)
+add_executable(flashinfer3 87-flashinfer3.cu)
+#target_link_libraries(flashinfer3 PRIVATE ${TORCH_LIBRARIES})
+#target_include_directories(flashinfer3 PRIVATE ${TORCH_INCLUDE_DIRS})
+
+add_executable(flashinfer5 89-flashinfer5.cu)
