@@ -176,6 +176,29 @@ INLINE T ptx_log2(T x) {
   CUTE_GCC_UNREACHABLE;
 }
 
+constexpr int mode_rz = 0;
+constexpr int mode_rn = 1;
+
+template<int mode>
+struct helper{};
+
+template<> struct helper<mode_rz> {
+  static constexpr const char mode[] = ".rz";
+};
+
+template<> struct helper<mode_rn> {
+  static constexpr const char mode[] = ".rn";
+};
+
+template <int rounding_mode>
+__device__ float compute_add(float a, float b) {
+  float result;
+  asm volatile("add.f32.%1 %0, %2, %3;":
+    "=f"(result) : "C"(helper<rounding_mode>::mode), "f"(a), "f"(b));
+  return result;
+}
+
+
 int main() {
   warp_leader_demo_kernel<<<2, 64>>>();
 

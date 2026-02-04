@@ -256,3 +256,10 @@ add_executable(flashinfer3 87-flashinfer3.cu)
 #target_include_directories(flashinfer3 PRIVATE ${TORCH_INCLUDE_DIRS})
 
 add_executable(flashinfer5 89-flashinfer5.cu)
+add_executable(flashinfer6 90-flashinfer6.cu)
+add_executable(flashinfer7 91-flashinfer7.cu)
+add_executable(flashinfer8 92-flashinfer8-rmsnorm.cu)
+
+add_executable(flashinfer9 94-torch-rmsnorm.cu)
+target_link_libraries(flashinfer9 PRIVATE ${TORCH_LIBRARIES})
+target_include_directories(flashinfer9 PRIVATE ${TORCH_INCLUDE_DIRS})
