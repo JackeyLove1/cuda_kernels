@@ -146,8 +146,7 @@ void RMSNorm(const T* input, const T* weight, T* output, uint32_t batch_size, ui
                                                                    eps);
       break;
   }
-  cudaDeviceSynchronize();
-  // CHECK(cudaGetLastError());
+  // Don't synchronize here. Benchmarking (and callers) should control synchronization.
 }
 
 torch::Tensor cuda_rms_norm(torch::Tensor input, torch::Tensor weight, float eps = 1e-5) {
@@ -175,6 +174,10 @@ torch::Tensor cuda_rms_norm(torch::Tensor input, torch::Tensor weight, float eps
   using T = float;
   RMSNorm<T>(input.data_ptr<T>(), weight.data_ptr<T>(), output.data_ptr<T>(), batch_size, d,
              stride_input, stride_output, eps_f, stream);
+
+  // Lightweight kernel launch check (no device-wide synchronization).
+  auto err = cudaGetLastError();
+  TORCH_CHECK(err == cudaSuccess, "RMSNorm kernel launch failed: ", cudaGetErrorString(err));
   return output;
 }
 

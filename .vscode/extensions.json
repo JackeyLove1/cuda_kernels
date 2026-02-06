@@ -1,0 +1,26 @@
+{
+  // Recommended VS Code extensions for this CUDA/CMake project.
+  // Install via: Extensions view -> "Recommended".
+  "recommendations": [
+    // clangd (CUDA/C++ IntelliSense). This repo's settings.json uses this as the default formatter.
+    "KylinIdeTeam.kylin-clangd",
+    // If you prefer upstream clangd extension instead of Kylin's fork, install this too.
+    "llvm-vs-code-extensions.vscode-clangd",
+
+    // CMake workflow (configure/build + export compile_commands.json)
+    "ms-vscode.cmake-tools",
+    "twxs.cmake",
+
+    // Debugger integration (cuda-gdb via cppdbg in .vscode/launch.json)
+    "ms-vscode.cpptools",
+
+    // Python utilities in this repo (benchmarks/scripts)
+    "ms-python.python",
+    "ms-python.vscode-pylance",
+
+    // AI assistants requested by the project
+    "anthropic.claude-code",
+    "openai.chatgpt"
+  ],
+  "unwantedRecommendations": []
+}

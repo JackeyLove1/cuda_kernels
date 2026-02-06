@@ -86,3 +86,7 @@ __forceinline__ __host__ __device__ auto MAX(T a, U b) {
     }                                                                                       \
   }
 #endif  // CUDA_EXAMPLES_UTILS_CUH
+
+#define STRINGFY(str) #str
+#define TORCH_BINDING_COMMON_EXTENSION(func)                                   \
+    m.def(STRINGFY(func), &func, STRINGFY(func));

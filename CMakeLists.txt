@@ -263,3 +263,7 @@ add_executable(flashinfer8 92-flashinfer8-rmsnorm.cu)
 add_executable(flashinfer9 94-torch-rmsnorm.cu)
 target_link_libraries(flashinfer9 PRIVATE ${TORCH_LIBRARIES})
 target_include_directories(flashinfer9 PRIVATE ${TORCH_INCLUDE_DIRS})
+
+add_executable(flashinfer10 95-flashinfer-rope.cu)
+#target_link_libraries(flashinfer10 PRIVATE ${TORCH_LIBRARIES})
+#target_include_directories(flashinfer10 PRIVATE ${TORCH_INCLUDE_DIRS})
