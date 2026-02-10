@@ -270,3 +270,5 @@ add_executable(flashinfer10 95-flashinfer-rope.cu)
 
 add_executable(flashinfer11 96-flashinfer-gemm1.cu)
 add_executable(flashinfer12 97-flashinfer-dotp.cu)
+add_executable(conv2d1 98-2D-Conv.cu)
+add_executable(stencil 99-stencil.cu)
