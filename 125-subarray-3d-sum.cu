@@ -115,7 +115,7 @@ __forceinline__ __device__ T WarpReduceOp(T value) {
 
 template <typename T, typename Op>
 inline __device__ T BlockReduceOp(T value) {
-  const auto tid = threadIdx.y * blockDim.x + threadIdx.x;
+  const auto tid = threadIdx.z * blockDim.y * blockDim.x + threadIdx.y * blockDim.x + threadIdx.x;
   const auto lane_id = tid & 31;
   const auto warp_id = tid >> 5;
 
@@ -130,7 +130,7 @@ inline __device__ T BlockReduceOp(T value) {
 
   // block reduce
   if (warp_id == 0) {
-    const int nums_warps = (blockDim.x * blockDim.y + 31) >> 5;
+    const int nums_warps = (blockDim.x * blockDim.y * blockDim.z + 31) >> 5;
     const T lane_value = (lane_id < nums_warps) ? shared_data[lane_id] : Op::identity();
     value = WarpReduceOp<T, Op>(lane_value);
   }
@@ -161,7 +161,7 @@ static constexpr int MAX_BLOCKS = 4096;
 static constexpr int THREADS_PER_BLOCK = 256;
 static constexpr int TILE_X = 16;
 static constexpr int TILE_Y = 16;
-static constexpr int TILE_SIZE = 32;
+static constexpr int TILE_SIZE = 8;
 static constexpr int CFACTOR = 8;
 
 #define CHECK_CUDA(call)                                                                           \
@@ -174,150 +174,47 @@ static constexpr int CFACTOR = 8;
   } while (0)
 
 /**
-Implement a program that computes the sum of a subarray of 32-bit integers. You are given an input
-array input of length N, and two indices S and E. S and E are inclusive, 0-based start and end
-indices— compute the sum of input[S...E].
+Implement a program that computes the sum of a 3D subarray of 32-bit integers. You are given an
+input 3D array input of length N×M×K, and two depth indices S_DEP and E_DEP, and two row indices
+S_ROW and E_ROW and two column indices S_COL and E_COL. S_DEP, E_DEP, S_ROW, E_ROW, S_COL and E_COL
+are inclusive, 0-based start and end indices—compute the sum of
+input[S_DEP..E_DEP][S_ROW..E_ROW][S_COL..E_COL].
  */
 
 void __global__ subarray_sum_kernel(const int* __restrict__ input, int* __restrict__ output,
-                                    const int N, const int M, const int S_ROW, const int E_ROW,
+                                    const int N, const int M, const int K, const int S_DEP,
+                                    const int E_DEP, const int S_ROW, const int E_ROW,
                                     const int S_COL, const int E_COL) {
-  const int tx = threadIdx.x, ty = threadIdx.y;
+  const int tx = threadIdx.x, ty = threadIdx.y, tz = threadIdx.z;
+  const int dep_id = blockIdx.z * blockDim.z + tz;
   const int row_id = blockIdx.y * blockDim.y + ty;
-  const int col_id = blockIdx.x * blockDim.x * CFACTOR + tx;
+  const int col_id = blockIdx.x * blockDim.x + tx;
   const int row_stride = gridDim.y * blockDim.y;
-  const int col_stride = gridDim.x * blockDim.x * CFACTOR;
+  const int col_stride = gridDim.x * blockDim.x;
+  const int dep_stride = gridDim.z * blockDim.z;
   int thread_sum = 0;
-
-  for (int row = S_ROW + row_id; row <= E_ROW; row += row_stride) {
-    for (int col = S_COL + col_id; col <= E_COL; col += col_stride) {
-      const int row_base = row * M;
-#pragma unroll
-      for (int k = 0; k < CFACTOR; ++k) {
-        const int c = col + k * blockDim.x;
-        if (c <= E_COL) {
-          thread_sum += input[row_base + c];
-        }
+  for (int dep = S_DEP + dep_id; dep <= E_DEP; dep += dep_stride) {
+    for (int row = S_ROW + row_id; row <= E_ROW; row += row_stride) {
+      for (int col = S_COL + col_id; col <= E_COL; col += col_stride) {
+        thread_sum += input[dep * M * K + row * K + col];
       }
     }
   }
   thread_sum = BlockReduceDynamic<int>(thread_sum, ReduceOpType::SUM);
-  if (tx == 0 && ty == 0) {
+  if (tx == 0 && ty == 0 && tz == 0) {
     atomicAdd(output, thread_sum);
   }
 }
 
 // A, B, and C are device pointers
-extern "C" void solve(const int* input, int* output, int N, int M, int S_ROW, int E_ROW, int S_COL,
-                      int E_COL) {
+extern "C" void solve(const int* input, int* output, int N, int M, int K, int S_DEP, int E_DEP,
+                      int S_ROW, int E_ROW, int S_COL, int E_COL) {
   CHECK_CUDA(cudaMemset(output, 0, sizeof(int)));
-  dim3 threadsPerBlock(TILE_SIZE, 8);
-  dim3 blocksPerGrid(64, 64);
+  dim3 threadsPerBlock(TILE_SIZE, TILE_SIZE, TILE_SIZE);
+  dim3 blocksPerGrid(16, 16, 16);
 
-  subarray_sum_kernel<<<blocksPerGrid, threadsPerBlock>>>(input, output, N, M, S_ROW, E_ROW, S_COL,
-                                                          E_COL);
+  subarray_sum_kernel<<<blocksPerGrid, threadsPerBlock>>>(input, output, N, M, K, S_DEP, E_DEP,
+                                                          S_ROW, E_ROW, S_COL, E_COL);
 
   CHECK_CUDA(cudaDeviceSynchronize());
-}
-
-static int cpu_subarray_sum(const thrust::host_vector<int>& input, int N, int M, int S_ROW,
-                            int E_ROW, int S_COL, int E_COL) {
-  int ans = 0;
-  for (int r = S_ROW; r <= E_ROW; ++r) {
-    for (int c = S_COL; c <= E_COL; ++c) {
-      ans += input[r * M + c];
-    }
-  }
-  return ans;
-}
-
-int main(int argc, char** argv) {
-  int N = 2;
-  int M = 3;
-  if (argc >= 3) {
-    N = atoi(argv[1]);
-    M = atoi(argv[2]);
-  }
-
-  printf("=== Subarray 2D Sum Unit Test & Benchmark ===\n");
-  printf("Shape: N=%d, M=%d\n", N, M);
-
-  thrust::host_vector<int> h_input(N * M);
-  std::mt19937 rng(42);
-  std::uniform_int_distribution<int> dist(-10, 10);
-  for (int i = 0; i < N * M; ++i) h_input[i] = dist(rng);
-
-  thrust::device_vector<int> d_input = h_input;
-  thrust::device_vector<int> d_output(1);
-  thrust::host_vector<int> h_output(1);
-
-  bool pass = true;
-  int mismatches = 0;
-  constexpr int MAX_PRINT_MISMATCH = 10;
-
-  for (int s_row = 0; s_row < N; ++s_row) {
-    for (int e_row = s_row; e_row < N; ++e_row) {
-      for (int s_col = 0; s_col < M; ++s_col) {
-        for (int e_col = s_col; e_col < M; ++e_col) {
-          solve(thrust::raw_pointer_cast(d_input.data()), thrust::raw_pointer_cast(d_output.data()),
-                N, M, s_row, e_row, s_col, e_col);
-          h_output = d_output;
-          const int gpu_val = h_output[0];
-          const int cpu_val = cpu_subarray_sum(h_input, N, M, s_row, e_row, s_col, e_col);
-          if (gpu_val != cpu_val) {
-            pass = false;
-            if (mismatches < MAX_PRINT_MISMATCH) {
-              printf("Mismatch #%d: [%d:%d, %d:%d] gpu=%d cpu=%d\n", mismatches + 1, s_row, e_row,
-                     s_col, e_col, gpu_val, cpu_val);
-            }
-            ++mismatches;
-          }
-        }
-      }
-    }
-  }
-
-  printf("Correctness: %s (mismatches=%d)\n\n", pass ? "PASS" : "FAIL", mismatches);
-
-  const int S_ROW = 0;
-  const int E_ROW = N - 1;
-  const int S_COL = 0;
-  const int E_COL = M - 1;
-
-  cudaEvent_t t0, t1;
-  CHECK_CUDA(cudaEventCreate(&t0));
-  CHECK_CUDA(cudaEventCreate(&t1));
-
-  constexpr int WARMUP = 10;
-  constexpr int NITER = 1000;
-  for (int i = 0; i < WARMUP; ++i) {
-    solve(thrust::raw_pointer_cast(d_input.data()), thrust::raw_pointer_cast(d_output.data()), N, M,
-          S_ROW, E_ROW, S_COL, E_COL);
-  }
-
-  CHECK_CUDA(cudaEventRecord(t0));
-  for (int i = 0; i < NITER; ++i) {
-    solve(thrust::raw_pointer_cast(d_input.data()), thrust::raw_pointer_cast(d_output.data()), N, M,
-          S_ROW, E_ROW, S_COL, E_COL);
-  }
-  CHECK_CUDA(cudaEventRecord(t1));
-  CHECK_CUDA(cudaEventSynchronize(t1));
-
-  float total_ms = 0.0f;
-  CHECK_CUDA(cudaEventElapsedTime(&total_ms, t0, t1));
-  const float avg_ms = total_ms / static_cast<float>(NITER);
-
-  const double elements = static_cast<double>(N) * static_cast<double>(M);
-  const double bytes_moved = elements * sizeof(int) + sizeof(int);
-  const double gelem_per_sec = elements / (avg_ms * 1e-3) / 1e9;
-  const double bandwidth_gbs = bytes_moved / (avg_ms * 1e-3) / 1e9;
-
-  printf("=== Performance (%d runs) ===\n", NITER);
-  printf("  Avg latency : %.6f ms\n", avg_ms);
-  printf("  Throughput  : %.6f Gelem/s\n", gelem_per_sec);
-  printf("  Bandwidth   : %.6f GB/s\n", bandwidth_gbs);
-
-  CHECK_CUDA(cudaEventDestroy(t0));
-  CHECK_CUDA(cudaEventDestroy(t1));
-  return pass ? 0 : 1;
 }
