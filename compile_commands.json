@@ -586,5 +586,53 @@
   "command": "/usr/local/cuda/bin/nvcc -forward-unknown-to-host-compiler -I/mnt/c/Software/Codes/cuda/cuda_kernels -I/mnt/c/Software/Codes/cuda/cuda_kernels/3rdparty/cutlass/include -I/mnt/c/Software/Codes/cuda/cuda_kernels/3rdparty/cutlass/tools/util/include -I/mnt/c/Software/Codes/cuda/cuda_kernels/3rdparty/cutlass/examples/common -I/mnt/c/Software/Codes/cuda/cuda_kernels/include  --extended-lambda -g -std=c++17 \"--generate-code=arch=compute_52,code=[compute_52,sm_52]\" -use_fast_math -lineinfo -Xcompiler=-w -x cu -c /mnt/c/Software/Codes/cuda/cuda_kernels/97-flashinfer-dotp.cu -o CMakeFiles/flashinfer12.dir/97-flashinfer-dotp.cu.o",
   "file": "/mnt/c/Software/Codes/cuda/cuda_kernels/97-flashinfer-dotp.cu",
   "output": "CMakeFiles/flashinfer12.dir/97-flashinfer-dotp.cu.o"
+},
+{
+  "directory": "/mnt/c/Software/Codes/cuda/cuda_kernels/build",
+  "command": "/usr/local/cuda/bin/nvcc -forward-unknown-to-host-compiler -I/mnt/c/Software/Codes/cuda/cuda_kernels -I/mnt/c/Software/Codes/cuda/cuda_kernels/3rdparty/cutlass/include -I/mnt/c/Software/Codes/cuda/cuda_kernels/3rdparty/cutlass/tools/util/include -I/mnt/c/Software/Codes/cuda/cuda_kernels/3rdparty/cutlass/examples/common -I/mnt/c/Software/Codes/cuda/cuda_kernels/include  --extended-lambda -g -std=c++17 \"--generate-code=arch=compute_52,code=[compute_52,sm_52]\" -use_fast_math -lineinfo -Xcompiler=-w -x cu -c /mnt/c/Software/Codes/cuda/cuda_kernels/98-2D-Conv.cu -o CMakeFiles/conv2d1.dir/98-2D-Conv.cu.o",
+  "file": "/mnt/c/Software/Codes/cuda/cuda_kernels/98-2D-Conv.cu",
+  "output": "CMakeFiles/conv2d1.dir/98-2D-Conv.cu.o"
+},
+{
+  "directory": "/mnt/c/Software/Codes/cuda/cuda_kernels/build",
+  "command": "/usr/local/cuda/bin/nvcc -forward-unknown-to-host-compiler -I/mnt/c/Software/Codes/cuda/cuda_kernels -I/mnt/c/Software/Codes/cuda/cuda_kernels/3rdparty/cutlass/include -I/mnt/c/Software/Codes/cuda/cuda_kernels/3rdparty/cutlass/tools/util/include -I/mnt/c/Software/Codes/cuda/cuda_kernels/3rdparty/cutlass/examples/common -I/mnt/c/Software/Codes/cuda/cuda_kernels/include  --extended-lambda -g -std=c++17 \"--generate-code=arch=compute_52,code=[compute_52,sm_52]\" -use_fast_math -lineinfo -Xcompiler=-w -x cu -c /mnt/c/Software/Codes/cuda/cuda_kernels/99-stencil.cu -o CMakeFiles/stencil.dir/99-stencil.cu.o",
+  "file": "/mnt/c/Software/Codes/cuda/cuda_kernels/99-stencil.cu",
+  "output": "CMakeFiles/stencil.dir/99-stencil.cu.o"
+},
+{
+  "directory": "/mnt/c/Software/Codes/cuda/cuda_kernels/build",
+  "command": "/usr/local/cuda/bin/nvcc -forward-unknown-to-host-compiler -I/mnt/c/Software/Codes/cuda/cuda_kernels -I/mnt/c/Software/Codes/cuda/cuda_kernels/3rdparty/cutlass/include -I/mnt/c/Software/Codes/cuda/cuda_kernels/3rdparty/cutlass/tools/util/include -I/mnt/c/Software/Codes/cuda/cuda_kernels/3rdparty/cutlass/examples/common -I/mnt/c/Software/Codes/cuda/cuda_kernels/include  --extended-lambda -g -std=c++17 \"--generate-code=arch=compute_52,code=[compute_52,sm_52]\" -use_fast_math -lineinfo -Xcompiler=-w -x cu -c /mnt/c/Software/Codes/cuda/cuda_kernels/100-histogram.cu -o CMakeFiles/hist.dir/100-histogram.cu.o",
+  "file": "/mnt/c/Software/Codes/cuda/cuda_kernels/100-histogram.cu",
+  "output": "CMakeFiles/hist.dir/100-histogram.cu.o"
+},
+{
+  "directory": "/mnt/c/Software/Codes/cuda/cuda_kernels/build",
+  "command": "/usr/local/cuda/bin/nvcc -forward-unknown-to-host-compiler -I/mnt/c/Software/Codes/cuda/cuda_kernels -I/mnt/c/Software/Codes/cuda/cuda_kernels/3rdparty/cutlass/include -I/mnt/c/Software/Codes/cuda/cuda_kernels/3rdparty/cutlass/tools/util/include -I/mnt/c/Software/Codes/cuda/cuda_kernels/3rdparty/cutlass/examples/common -I/mnt/c/Software/Codes/cuda/cuda_kernels/include  --extended-lambda -g -std=c++17 \"--generate-code=arch=compute_52,code=[compute_52,sm_52]\" -use_fast_math -lineinfo -Xcompiler=-w -x cu -c /mnt/c/Software/Codes/cuda/cuda_kernels/101-ppmp-reduce-kernels.cu -o CMakeFiles/ppmp-reduce.dir/101-ppmp-reduce-kernels.cu.o",
+  "file": "/mnt/c/Software/Codes/cuda/cuda_kernels/101-ppmp-reduce-kernels.cu",
+  "output": "CMakeFiles/ppmp-reduce.dir/101-ppmp-reduce-kernels.cu.o"
+},
+{
+  "directory": "/mnt/c/Software/Codes/cuda/cuda_kernels/build",
+  "command": "/usr/local/cuda/bin/nvcc -forward-unknown-to-host-compiler -I/mnt/c/Software/Codes/cuda/cuda_kernels -I/mnt/c/Software/Codes/cuda/cuda_kernels/3rdparty/cutlass/include -I/mnt/c/Software/Codes/cuda/cuda_kernels/3rdparty/cutlass/tools/util/include -I/mnt/c/Software/Codes/cuda/cuda_kernels/3rdparty/cutlass/examples/common -I/mnt/c/Software/Codes/cuda/cuda_kernels/include  --extended-lambda -g -std=c++17 \"--generate-code=arch=compute_52,code=[compute_52,sm_52]\" -use_fast_math -lineinfo -Xcompiler=-w -x cu -c /mnt/c/Software/Codes/cuda/cuda_kernels/102-ppmp-scan.cu -o CMakeFiles/ppmp-scan.dir/102-ppmp-scan.cu.o",
+  "file": "/mnt/c/Software/Codes/cuda/cuda_kernels/102-ppmp-scan.cu",
+  "output": "CMakeFiles/ppmp-scan.dir/102-ppmp-scan.cu.o"
+},
+{
+  "directory": "/mnt/c/Software/Codes/cuda/cuda_kernels/build",
+  "command": "/usr/local/cuda/bin/nvcc -forward-unknown-to-host-compiler -I/mnt/c/Software/Codes/cuda/cuda_kernels -I/mnt/c/Software/Codes/cuda/cuda_kernels/3rdparty/cutlass/include -I/mnt/c/Software/Codes/cuda/cuda_kernels/3rdparty/cutlass/tools/util/include -I/mnt/c/Software/Codes/cuda/cuda_kernels/3rdparty/cutlass/examples/common -I/mnt/c/Software/Codes/cuda/cuda_kernels/include  --extended-lambda -g -std=c++17 \"--generate-code=arch=compute_52,code=[compute_52,sm_52]\" -use_fast_math -lineinfo -Xcompiler=-w -x cu -c /mnt/c/Software/Codes/cuda/cuda_kernels/103-leet-matrix-add.cu -o CMakeFiles/leet-matrix-add.dir/103-leet-matrix-add.cu.o",
+  "file": "/mnt/c/Software/Codes/cuda/cuda_kernels/103-leet-matrix-add.cu",
+  "output": "CMakeFiles/leet-matrix-add.dir/103-leet-matrix-add.cu.o"
+},
+{
+  "directory": "/mnt/c/Software/Codes/cuda/cuda_kernels/build",
+  "command": "/usr/local/cuda/bin/nvcc -forward-unknown-to-host-compiler -I/mnt/c/Software/Codes/cuda/cuda_kernels -I/mnt/c/Software/Codes/cuda/cuda_kernels/3rdparty/cutlass/include -I/mnt/c/Software/Codes/cuda/cuda_kernels/3rdparty/cutlass/tools/util/include -I/mnt/c/Software/Codes/cuda/cuda_kernels/3rdparty/cutlass/examples/common -I/mnt/c/Software/Codes/cuda/cuda_kernels/include  --extended-lambda -g -std=c++17 \"--generate-code=arch=compute_52,code=[compute_52,sm_52]\" -use_fast_math -lineinfo -Xcompiler=-w -x cu -c /mnt/c/Software/Codes/cuda/cuda_kernels/104-leet-1d-conv.cu -o CMakeFiles/leet-1d-conv.dir/104-leet-1d-conv.cu.o",
+  "file": "/mnt/c/Software/Codes/cuda/cuda_kernels/104-leet-1d-conv.cu",
+  "output": "CMakeFiles/leet-1d-conv.dir/104-leet-1d-conv.cu.o"
+},
+{
+  "directory": "/mnt/c/Software/Codes/cuda/cuda_kernels/build",
+  "command": "/usr/local/cuda/bin/nvcc -forward-unknown-to-host-compiler -I/mnt/c/Software/Codes/cuda/cuda_kernels -I/mnt/c/Software/Codes/cuda/cuda_kernels/3rdparty/cutlass/include -I/mnt/c/Software/Codes/cuda/cuda_kernels/3rdparty/cutlass/tools/util/include -I/mnt/c/Software/Codes/cuda/cuda_kernels/3rdparty/cutlass/examples/common -I/mnt/c/Software/Codes/cuda/cuda_kernels/include  --extended-lambda -g -std=c++17 \"--generate-code=arch=compute_52,code=[compute_52,sm_52]\" -use_fast_math -lineinfo -Xcompiler=-w -x cu -c /mnt/c/Software/Codes/cuda/cuda_kernels/105-leet-relu.cu -o CMakeFiles/leet-relu.dir/105-leet-relu.cu.o",
+  "file": "/mnt/c/Software/Codes/cuda/cuda_kernels/105-leet-relu.cu",
+  "output": "CMakeFiles/leet-relu.dir/105-leet-relu.cu.o"
 }
 ]

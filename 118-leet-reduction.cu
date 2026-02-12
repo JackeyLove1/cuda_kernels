@@ -1,0 +1,127 @@
+#include <cuda.h>
+#include <cuda_fp16.h>
+#include <cuda_runtime.h>
+#include <thrust/device_vector.h>
+#include <thrust/host_vector.h>
+
+#include <algorithm>
+#include <cmath>
+#include <cstdio>
+#include <cstdlib>
+#include <cub/cub.cuh>
+#include <cuda/pipeline>
+#include <numeric>
+#include <random>
+#include <type_traits>
+#include <vector>
+
+#define CEIL(a, b) (((a) + (b) - 1) / (b))
+
+template <typename>
+struct dependent_false : std::false_type {};
+
+template <typename T>
+__forceinline__ __device__ auto LOAD4(const T* ptr) {
+  if constexpr (std::is_same_v<T, int>) {
+    return reinterpret_cast<const int4*>(ptr);
+  } else if constexpr (std::is_same_v<T, float>) {
+    return reinterpret_cast<const float4*>(ptr);
+  } else if constexpr (std::is_same_v<T, double>) {
+    return reinterpret_cast<const double4*>(ptr);
+  } else if constexpr (std::is_same_v<T, short>) {
+    return reinterpret_cast<const short4*>(ptr);
+  } else {
+    static_assert(dependent_false<T>::value, "Unsupported type for LOAD4");
+    return nullptr;
+  }
+}
+
+template <typename T>
+__forceinline__ __device__ auto STORE4(T* ptr) {
+  if constexpr (std::is_same_v<T, int>) {
+    return reinterpret_cast<int4*>(ptr);
+  } else if constexpr (std::is_same_v<T, float>) {
+    return reinterpret_cast<float4*>(ptr);
+  } else if constexpr (std::is_same_v<T, double>) {
+    return reinterpret_cast<double4*>(ptr);
+  } else if constexpr (std::is_same_v<T, short>) {
+    return reinterpret_cast<short4*>(ptr);
+  } else {
+    static_assert(dependent_false<T>::value, "Unsupported type for STORE4");
+    return nullptr;
+  }
+}
+
+__forceinline__ __device__ __host__ float4 operator+(const float4 a, const float4 b) {
+  return make_float4(a.x + b.x, a.y + b.y, a.z + b.z, a.w + b.w);
+}
+
+static constexpr unsigned int FULL_MASK = 0xffffffff;
+
+template <typename T>
+__forceinline__ __device__ T WarpReduceSum(T value) {
+#pragma unroll
+  for (int offset = 16; offset > 0; offset >>= 1) {
+    value += __shfl_down_sync(FULL_MASK, value, offset);
+  }
+  return value;
+}
+
+static constexpr int PER_THREAD_WORK_ITEMS = 1;
+static constexpr int WARP_SIZE = 32;
+static constexpr int MAX_BLOCKS = 4096;
+static constexpr int THREADS_PER_BLOCK = 1024;
+
+__global__ void kernel(const float* __restrict__ input, float* __restrict__ output, const int N) {
+  const int tid = threadIdx.x;
+  const int gid = blockIdx.x * blockDim.x + tid;
+  const int stride = gridDim.x * blockDim.x;
+  const int total = N;
+
+  const int vec_size = total >> 2;
+  const int vec_tail = total & 3;
+  const float4* in4 = LOAD4(input);
+  float4* output4 = STORE4(output);
+
+  __shared__ float shared_data[THREADS_PER_BLOCK];
+  float thread_sum{0.f};
+  for (int i = gid; i < vec_size; i += stride) {
+    const auto value = in4[i];
+    thread_sum += value.x + value.y + value.z + value.w;
+  }
+  if (vec_tail && gid < vec_tail) {
+    const int base = (vec_size << 2) + gid;
+    const auto value = input[base];
+    thread_sum += value;
+  }
+  shared_data[tid] = thread_sum;
+  __syncthreads();
+
+  const int warp_id = tid >> 5;
+  const int lane_id = tid & 31;
+
+  // warp reduce sum
+  thread_sum = WarpReduceSum(thread_sum);
+  if (lane_id == 0) {
+    shared_data[warp_id] = thread_sum;
+  }
+  __syncthreads();
+
+  if (warp_id == 0) {
+    constexpr int nums_warps = THREADS_PER_BLOCK / WARP_SIZE;
+    float lane_value = (lane_id < nums_warps) ? shared_data[lane_id] : 0.f;
+    float block_sum = WarpReduceSum(lane_value);
+    if (lane_id == 0) {
+      atomicAdd(output, block_sum);
+    }
+  }
+}
+
+// input, output are device pointers
+extern "C" void solve(const float* input, float* output, int N) {
+  const int threadsPerBlock = THREADS_PER_BLOCK;
+  const int blocksPerGrid = std::min(CEIL(N, threadsPerBlock * 4), MAX_BLOCKS);
+
+  kernel<<<blocksPerGrid, threadsPerBlock>>>(input, output, N);
+  cudaDeviceSynchronize();
+}
