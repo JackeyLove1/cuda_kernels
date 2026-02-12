@@ -162,118 +162,64 @@ static constexpr int MAX_BLOCKS = 4096;
 static constexpr int THREADS_PER_BLOCK = 1024;
 
 /**
-Write a program that compute s the softmax function for an array of 32-bit floating-point numbers on
-a GPU. The softmax function is defined as follows: For an input array x of length n, the softmax of
-x, denoted σ(x), is an array of length n where the i-th element is: σ(x)i= e×i ∑n_j=1 e×j Your
-solution should handle potential overflow issues by using the"max trick". Subtract the maximum value
-of the input array from each element before exponentiation. Implementation Requirements ·Use only
-native features (external libraries are not permitted) ·The solve function signature must remain
-unchanged ·The final result must be stored in the array output
+Implement a program that computes the sum of a subarray of 32-bit integers. You are given an input
+array input of length N, and two indices S and E. S and E are inclusive, 0-based start and end
+indices— compute the sum of input[S...E].
  */
 
-__global__ void _max_kernel(const float* __restrict__ input, float* __restrict__ global_max,
-                            const int N) {
+void __global__ subarray_sum_kernel(const int* __restrict__ input, int* __restrict__ output,
+                                    const int S, const int E) {
   const int tid = threadIdx.x;
   const int gid = THREADS_PER_BLOCK * blockIdx.x + tid;
-  const float4* in4 = LOAD4(input);
-  const int stride = gridDim.x * blockDim.x;
-  const int total = N;
+  const int stride = THREADS_PER_BLOCK * gridDim.x;
+  const int prefix_end = E + 1;
+  const int vec_size = prefix_end >> 2;
+  const int vec_tail = prefix_end & 3;
+  const int4* in4 = LOAD4(input);
+  int thread_ssum = 0;
+  int thread_esum = 0;
 
-  const int vec_size = total >> 2;
-  const int vec_tail = total & 3;
-  float thread_max = MaxOp<float>::identity();
+  // Single pass over [0, E + 1): accumulate both prefixes.
   for (int i = gid; i < vec_size; i += stride) {
     const auto value = in4[i];
-    thread_max = MaxOp<float>::apply(thread_max, value.x);
-    thread_max = MaxOp<float>::apply(thread_max, value.y);
-    thread_max = MaxOp<float>::apply(thread_max, value.z);
-    thread_max = MaxOp<float>::apply(thread_max, value.w);
+    const int base = i << 2;
+    thread_esum += value.x + value.y + value.z + value.w;
+    thread_ssum += (base < S) ? value.x : 0;
+    thread_ssum += (base + 1 < S) ? value.y : 0;
+    thread_ssum += (base + 2 < S) ? value.z : 0;
+    thread_ssum += (base + 3 < S) ? value.w : 0;
   }
 
   if (vec_tail && gid < vec_tail) {
     const int base = (vec_size << 2) + gid;
-    const auto value = input[base];
-    thread_max = MaxOp<float>::apply(thread_max, value);
+    const int value = input[base];
+    thread_esum += value;
+    if (base < S) {
+      thread_ssum += value;
+    }
   }
 
-  thread_max = BlockReduceDynamic<float>(thread_max, ReduceOpType::MAX);
+  int thread_diff = thread_esum - thread_ssum;
+  thread_diff = BlockReduceDynamic<int>(thread_diff, ReduceOpType::SUM);
   if (tid == 0) {
-    atomicMax(global_max, thread_max);
+    atomicAdd(output, thread_diff);
   }
 }
 
-__global__ void _sum_kernel(const float* __restrict__ input, const float* global_max,
-                            float* __restrict__ global_sum, const int N) {
-  const int tid = threadIdx.x;
-  const int gid = THREADS_PER_BLOCK * blockIdx.x + tid;
-  const float4* in4 = LOAD4(input);
-  const int stride = gridDim.x * blockDim.x;
-  const int total = N;
+// A, B, and C are device pointers
+extern "C" void solve(const int* input, int* output, int N, int S, int E) {
+  cudaMemset(output, 0, sizeof(int));
 
-  const int vec_size = total >> 2;
-  const int vec_tail = total & 3;
-  const float max_value = *global_max;
-  float thread_sum = SumOp<float>::identity();
-  for (int i = gid; i < vec_size; i += stride) {
-    const auto value = in4[i];
-    thread_sum = SumOp<float>::apply(thread_sum, expf(value.x - max_value));
-    thread_sum = SumOp<float>::apply(thread_sum, expf(value.y - max_value));
-    thread_sum = SumOp<float>::apply(thread_sum, expf(value.z - max_value));
-    thread_sum = SumOp<float>::apply(thread_sum, expf(value.w - max_value));
+  if (N <= 0 || S < 0 || E < 0 || S >= N || E >= N || S > E) {
+    cudaDeviceSynchronize();
+    return;
   }
 
-  if (vec_tail && gid < vec_tail) {
-    const int base = (vec_size << 2) + gid;
-    const auto value = input[base];
-    thread_sum = SumOp<float>::apply(thread_sum, expf(value - max_value));
-  }
+  const auto threadsPerBlock = THREADS_PER_BLOCK;
+  const int prefix_end = E + 1;
+  const auto blocksPerGrid = std::min(CEIL(prefix_end, threadsPerBlock), MAX_BLOCKS);
 
-  thread_sum = BlockReduceDynamic<float>(thread_sum, ReduceOpType::SUM);
-  if (tid == 0) {
-    atomicAdd(global_sum, thread_sum);
-  }
-}
-__global__ void softmax_kernel(const float* input, float* output, const float* global_max,
-                               const float* global_sum, const int N) {
-  const int tid = threadIdx.x;
-  const int gid = THREADS_PER_BLOCK * blockIdx.x + tid;
-  const int stride = gridDim.x * blockDim.x;
-  const float max_value = *global_max;
-  const float sum_value = *global_sum;
-  const int vec_size = N >> 2;
-  const int vec_tail = N & 3;
-  const float4* in4 = LOAD4(input);
-  float4* out4 = STORE4(output);
-  for (int i = gid; i < vec_size; i += stride) {
-    const auto value = in4[i];
-    out4[i].x = expf(value.x - max_value) / sum_value;
-    out4[i].y = expf(value.y - max_value) / sum_value;
-    out4[i].z = expf(value.z - max_value) / sum_value;
-    out4[i].w = expf(value.w - max_value) / sum_value;
-  }
-
-  if (vec_tail && gid < vec_tail) {
-    const int base = (vec_size << 2) + gid;
-    const auto value = input[base];
-    output[base] = expf(value - max_value) / sum_value;
-  }
-}
-// input, output are device pointers (i.e. pointers to memory on the GPU)
-extern "C" void solve(const float* input, float* output, int N) {
-  int threadsPerBlock = THREADS_PER_BLOCK;
-  int blocksPerGrid = std::min(CEIL(N, threadsPerBlock * 4), MAX_BLOCKS);
-
-  float *global_max, *global_sum;
-  cudaMalloc(&global_max, sizeof(float));
-  cudaMalloc(&global_sum, sizeof(float));
-  const float init_max = -INFINITY;
-  cudaMemcpy(global_max, &init_max, sizeof(float), cudaMemcpyHostToDevice);
-  cudaMemset(global_sum, 0.0f, sizeof(float));
-
-  _max_kernel<<<blocksPerGrid, threadsPerBlock>>>(input, global_max, N);
-  _sum_kernel<<<blocksPerGrid, threadsPerBlock>>>(input, global_max, global_sum, N);
-  softmax_kernel<<<blocksPerGrid, threadsPerBlock>>>(input, output, global_max, global_sum, N);
+  // In one launch: compute sum([0, E + 1)) - sum([0, S)).
+  subarray_sum_kernel<<<blocksPerGrid, threadsPerBlock>>>(input, output, S, E);
   cudaDeviceSynchronize();
-  cudaFree(global_max);
-  cudaFree(global_sum);
 }
