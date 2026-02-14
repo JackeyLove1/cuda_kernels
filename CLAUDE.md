@@ -5,4 +5,4 @@ in a high level , and also a senior research in OpenAI.
 
 ## Attention
 1. use windows WSL enviroment
-2. NVDIA 5060 GPU sm120 
+2. NVDIA 5060 GPU sm120 compute ability
