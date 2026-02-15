@@ -16,6 +16,7 @@
 #include <cstdlib>
 #include <cub/cub.cuh>
 #include <cuda/pipeline>
+#include <cuda/std/utility>
 #include <limits>
 #include <random>
 #include <type_traits>
@@ -215,68 +216,81 @@ static inline void write_scalar(T* ptr, T value) {
 }
 
 /**
-Implement a GPU program that"dequantizes"a weight matrix on the GPU. You are given an input matrix x
-of shape [M, N] containing quantized values and a scale matrix s of shape [ceil(M/T), ceil(N/T)],
-where T is the tile size. For each element X_{i,j}, the corresponding scale factor is S_{row,col}
-where row=\lfloor i/T\rfloor and col=\lfloor j/T\rfloor. The output Y_{i,j} should be computed as:
-Y_{i,j}=X_{i,j}×S_{row,col}
-
-constrains:
-1 ≤ M, N ≤ 8192
-TILE_SIZE ∈ {16, 32, 64, 128}
-Performance is measured with M = 8,192, N = 8,192
+Implement a batched matrix multiplication in FP32. Given a batch of matrices A of shape [B, M, K]
+and a batch of matrices B of shape [B, K, N], compute the output batch C of shape [B, M, N] such
+that for each batch index b: Cb=Ab×Bb All matrices are stored in row-major order and use 32-bit
+floating point numbers (FP32).
  */
-static constexpr int TM = 32;
-static constexpr int TN = 16;
 
-__global__ void kernel(const float* __restrict__ X, const float* __restrict__ S,
-                       float* __restrict__ Y, const int M, const int N, const int TILE_SIZE) {
-  const int row = blockDim.y * blockIdx.y + threadIdx.y;
-  const int col = blockDim.x * blockIdx.x + threadIdx.x;
+// A [M, K] B [K, N]
+template <int TILE, int TM, int TN>
+__global__ void kernel(const float* A, const float* B, float* C, int BATCH, const int M,
+                       const int N, const int K) {
+  const int tid = threadIdx.x;
+  // Each thread computes a TM x TN output tile.
+  // Threads are laid out as [TILE / TN] columns and [TILE / TM] rows.
+  constexpr auto tilePerRow = TILE / TN;
+  const auto tc = tid % tilePerRow;
+  const auto tr = tid / tilePerRow;
+  const auto col0 = blockIdx.x * TILE + tc * TN;
+  const auto row0 = blockIdx.y * TILE + tr * TM;
+  const auto batch = blockIdx.z;
+  const auto idx = batch * M * N + row0 * N + col0;
 
-  if (row < M && col < N) {
-    const auto s_row = row / TILE_SIZE, s_col = col / TILE_SIZE;
-    const auto s_num_cols = CEIL(N, TILE_SIZE);
-    const auto scala = S[s_row * s_num_cols + s_col];
-    Y[row * N + col] = X[row * N + col] * scala;
-  }
-}
+  __shared__ float As[TILE][TILE + 1];
+  __shared__ float Bs[TILE][TILE + 1];
 
-__global__ void kernel_vec(const float* __restrict__ X, const float* __restrict__ S,
-                           float* __restrict__ Y, const int M, const int N, const int TILE_SIZE) {
-  const int row = blockDim.y * blockIdx.y + threadIdx.y;
-  const int col = (blockDim.x * blockIdx.x + threadIdx.x) * 4;
+  float acc[TM][TN];
 
-  if (row < M && col < N) {
-    const auto s_row = row / TILE_SIZE, s_col = col / TILE_SIZE;
-    const auto s_num_cols = CEIL(N, TILE_SIZE);
-    const auto scala = S[s_row * s_num_cols + s_col];
-    if (col + 3 < N) {
-      const float4* x4 = LOAD4(X + row * N + col);
-      float4* y4 = STORE4(Y + row * N + col);
-      y4->x = x4->x * scala;
-      y4->y = x4->y * scala;
-      y4->z = x4->z * scala;
-      y4->w = x4->w * scala;
-    } else {
+  for (int i = 0; i < TM; ++i) {
 #pragma unroll
-      for (int k = 0; k < 4; ++k) {
-        const int c = col + k;
-        if (c < N) {
-          Y[row * N + c] = X[row * N + c] * scala;
+    for (int j = 0; j < TN; ++j) {
+      acc[i][j] = 0.0f;
+    }
+  }
+
+  const int num_tiles = CEIL(K, TILE);
+  for (int t = 0; t < num_tiles; ++t) {
+    for (int r = 0; r < TM; ++r) {
+      for (int c = 0; c < TN; ++c) {
+        auto t_row = tr * TM + r;
+        auto t_col = tc * TN + c;
+        auto a_col = t * TILE + tc * TN;
+        auto b_row = t * TILE + tr * TM;
+        As[t_row][t_col] =
+            (row0 + r < M && a_col + c < K) ? A[batch * M * K + (row0 + r) * K + a_col + c] : 0.0f;
+        Bs[t_row][t_col] =
+            (col0 + c < N && b_row + r < K) ? B[batch * K * N + (b_row + r) * N + col0 + c] : 0.0f;
+      }
+    }
+    __syncthreads();
+
+    for (int k = 0; k < TILE; ++k) {
+      for (int r = 0; r < TM; ++r) {
+        float a_val = As[tr * TM + r][k];
+#pragma unroll
+        for (int c = 0; c < TN; ++c) {
+          acc[r][c] = fmaf(a_val, Bs[k][tc * TN + c], acc[r][c]);
         }
+      }
+    }
+    __syncthreads();
+  }
+
+  // update output
+  for (int r = 0; r < TM; r++) {
+    for (int c = 0; c < TN; c++) {
+      if (row0 + r < M && col0 + c < N) {
+        C[(batch * M * N) + (row0 + r) * N + col0 + c] = acc[r][c];
       }
     }
   }
 }
-extern "C" void solve(const float* X, const float* S, float* Y, int M, int N, int TILE_SIZE) {
-  dim3 nthrds(TN, TM);
-  if (M == 8192 && N == 8192) {
-    dim3 nblks(CEIL(N, TN * 4), CEIL(M, TM));
-    kernel_vec<<<nblks, nthrds>>>(X, S, Y, M, N, TILE_SIZE);
-  } else {
-    dim3 nblks(CEIL(N, TN), CEIL(M, TM));
-    kernel<<<nblks, nthrds>>>(X, S, Y, M, N, TILE_SIZE);
-  }
-  cudaDeviceSynchronize();
+
+extern "C" void solve(const float* A, const float* B, float* C, int BATCH, int M, int N, int K) {
+  constexpr int TILE = 32, TM = 8, TN = 4;
+  const int nthrs = (TILE / TM) * (TILE / TN);
+  dim3 nblks(CEIL(N, TILE), CEIL(M, TILE), BATCH);
+  kernel<TILE, TM, TN><<<nblks, nthrs>>>(A, B, C, BATCH, M, N, K);
+  CUDA_CHECK(cudaGetLastError());
 }
