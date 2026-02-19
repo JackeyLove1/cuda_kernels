@@ -694,5 +694,17 @@
   "command": "/usr/local/cuda/bin/nvcc -forward-unknown-to-host-compiler -I/mnt/c/Software/Codes/cuda/cuda_kernels -I/mnt/c/Software/Codes/cuda/cuda_kernels/3rdparty/cutlass/include -I/mnt/c/Software/Codes/cuda/cuda_kernels/3rdparty/cutlass/tools/util/include -I/mnt/c/Software/Codes/cuda/cuda_kernels/3rdparty/cutlass/examples/common -I/mnt/c/Software/Codes/cuda/cuda_kernels/include  --extended-lambda -g -std=c++17 \"--generate-code=arch=compute_52,code=[compute_52,sm_52]\" -use_fast_math -lineinfo -Xcompiler=-w -x cu -c /mnt/c/Software/Codes/cuda/cuda_kernels/168-leet-kmeans.cu -o CMakeFiles/leet-kmeans.dir/168-leet-kmeans.cu.o",
   "file": "/mnt/c/Software/Codes/cuda/cuda_kernels/168-leet-kmeans.cu",
   "output": "CMakeFiles/leet-kmeans.dir/168-leet-kmeans.cu.o"
+},
+{
+  "directory": "/mnt/c/Software/Codes/cuda/cuda_kernels/build",
+  "command": "/usr/local/cuda/bin/nvcc -forward-unknown-to-host-compiler -I/mnt/c/Software/Codes/cuda/cuda_kernels -I/mnt/c/Software/Codes/cuda/cuda_kernels/3rdparty/cutlass/include -I/mnt/c/Software/Codes/cuda/cuda_kernels/3rdparty/cutlass/tools/util/include -I/mnt/c/Software/Codes/cuda/cuda_kernels/3rdparty/cutlass/examples/common -I/mnt/c/Software/Codes/cuda/cuda_kernels/include  --extended-lambda -g -std=c++17 \"--generate-code=arch=compute_52,code=[compute_52,sm_52]\" -use_fast_math -lineinfo -Xcompiler=-w -x cu -c /mnt/c/Software/Codes/cuda/cuda_kernels/185-leet-rgb-gray.cu -o CMakeFiles/leet-rgb2g.dir/185-leet-rgb-gray.cu.o",
+  "file": "/mnt/c/Software/Codes/cuda/cuda_kernels/185-leet-rgb-gray.cu",
+  "output": "CMakeFiles/leet-rgb2g.dir/185-leet-rgb-gray.cu.o"
+},
+{
+  "directory": "/mnt/c/Software/Codes/cuda/cuda_kernels/build",
+  "command": "/usr/local/cuda/bin/nvcc -forward-unknown-to-host-compiler -I/mnt/c/Software/Codes/cuda/cuda_kernels -I/mnt/c/Software/Codes/cuda/cuda_kernels/3rdparty/cutlass/include -I/mnt/c/Software/Codes/cuda/cuda_kernels/3rdparty/cutlass/tools/util/include -I/mnt/c/Software/Codes/cuda/cuda_kernels/3rdparty/cutlass/examples/common -I/mnt/c/Software/Codes/cuda/cuda_kernels/include  --extended-lambda -g -std=c++17 \"--generate-code=arch=compute_52,code=[compute_52,sm_52]\" -use_fast_math -lineinfo -Xcompiler=-w -x cu -c /mnt/c/Software/Codes/cuda/cuda_kernels/187-cg.cu -o CMakeFiles/leet-cg.dir/187-cg.cu.o",
+  "file": "/mnt/c/Software/Codes/cuda/cuda_kernels/187-cg.cu",
+  "output": "CMakeFiles/leet-cg.dir/187-cg.cu.o"
 }
 ]
