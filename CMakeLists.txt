@@ -302,3 +302,5 @@ add_executable(leet-fp16-bmm 164-leet-fp16-bmm.cu)
 add_executable(leet-kmeans 168-leet-kmeans.cu)
 add_executable(leet-rgb2g 185-leet-rgb-gray.cu)
 add_executable(leet-cg 187-cg.cu)
+
+add_executable(cut-copy-1 191-cutlass-copy.cu)
