@@ -724,5 +724,11 @@
   "command": "/usr/local/cuda/bin/nvcc -forward-unknown-to-host-compiler -I/mnt/c/Software/Codes/cuda/cuda_kernels -I/mnt/c/Software/Codes/cuda/cuda_kernels/3rdparty/cutlass/include -I/mnt/c/Software/Codes/cuda/cuda_kernels/3rdparty/cutlass/tools/util/include -I/mnt/c/Software/Codes/cuda/cuda_kernels/3rdparty/cutlass/examples/common -I/mnt/c/Software/Codes/cuda/cuda_kernels/include  --extended-lambda -g -std=c++17 \"--generate-code=arch=compute_120,code=[compute_120,sm_120]\" -use_fast_math -lineinfo -Xcompiler=-w -x cu -c /mnt/c/Software/Codes/cuda/cuda_kernels/191-cutlass-copy.cu -o CMakeFiles/cut-copy-1.dir/191-cutlass-copy.cu.o",
   "file": "/mnt/c/Software/Codes/cuda/cuda_kernels/191-cutlass-copy.cu",
   "output": "CMakeFiles/cut-copy-1.dir/191-cutlass-copy.cu.o"
+},
+{
+  "directory": "/mnt/c/Software/Codes/cuda/cuda_kernels/build",
+  "command": "/usr/local/cuda/bin/nvcc -forward-unknown-to-host-compiler -DUSE_C10D_GLOO -DUSE_DISTRIBUTED -DUSE_RPC -DUSE_TENSORPIPE -I/mnt/c/Software/Codes/cuda/cuda_kernels -I/mnt/c/Software/Codes/cuda/cuda_kernels/3rdparty/cutlass/include -I/mnt/c/Software/Codes/cuda/cuda_kernels/3rdparty/cutlass/tools/util/include -I/mnt/c/Software/Codes/cuda/cuda_kernels/3rdparty/cutlass/examples/common -I/mnt/c/Software/Codes/cuda/cuda_kernels/include -isystem /opt/libtorch/include -isystem /opt/libtorch/include/torch/csrc/api/include  --extended-lambda -g -std=c++17 \"--generate-code=arch=compute_120,code=[compute_120,sm_120]\" -use_fast_math -lineinfo -Xcompiler=-w -x cu -c /mnt/c/Software/Codes/cuda/cuda_kernels/199-fla-v1-1.cu -o CMakeFiles/fla1.dir/199-fla-v1-1.cu.o",
+  "file": "/mnt/c/Software/Codes/cuda/cuda_kernels/199-fla-v1-1.cu",
+  "output": "CMakeFiles/fla1.dir/199-fla-v1-1.cu.o"
 }
 ]
