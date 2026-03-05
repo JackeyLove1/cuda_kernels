@@ -3,6 +3,26 @@
 #include <torch/extension.h>
 #include <torch/types.h>
 
+/**
+grid: (B, nh)
+└─ 一个 CTA = 一个 (batch b, head h)
+   ├─ blockDim.x = Bc 个 threads（tx = 0..Bc-1）
+   ├─ 外层 j = 0..Tc-1   // 扫 K/V 的列块
+   │  ├─ 每个 thread 加载:
+   │  │    Kj[tx, 0:d], Vj[tx, 0:d]   -> 各 d 个
+   │  ├─ 所以整个 CTA 在该 j:
+   │  │    加载 K: Bc*d, V: Bc*d
+   │  └─ __syncthreads()
+   │
+   │  └─ 内层 i = 0..Tr-1   // 扫 Q/O 的行块
+   │     ├─ 每个 thread 加载 Qi[tx, 0:d] -> d 个
+   │     ├─ 然后该 thread 计算自己这一行:
+   │     │    S[tx, y], y=0..Bc-1   (与整块 Kj 做点积)
+   │     ├─ softmax 行归一化（row_m/row_l）
+   │     └─ 用 Vj 做加权和，更新 O[tx, 0:d]
+   │
+   └─ __syncthreads() 后进入下一个 j
+ */
 __global__ void forward_kernel(const float* Q, const float* K, const float* V, const int N,
                                const int d, const int Tc, const int Tr, const int Bc, const int Br,
                                const float softmax_scale, float* l, float* m, float* O) {
@@ -22,7 +42,7 @@ __global__ void forward_kernel(const float* Q, const float* K, const float* V, c
   float* Vj = &sram[tile_size * 2];
   float* S = &sram[tile_size * 3];
 
-  for (int j = 0; j < Tc; j++) {
+  for (int j = 0; j < Tc; j++) {  // Tc * Bc =  N, 扫 K/V 的列块
     // Load Kj, Vj to SRAM
     for (int x = 0; x < d; x++) {
       Kj[(tx * d) + x] = K[qkv_offset + (tile_size * j) + (tx * d) + x];
@@ -91,8 +111,10 @@ torch::Tensor forward(torch::Tensor Q, torch::Tensor K, torch::Tensor V) {
   const int N = Q.size(2);
   const int d = Q.size(3);
 
-  const int Tc = ceil((float)N / Bc);
-  const int Tr = ceil((float)N / Br);
+  // Number of tiles along sequence length (global tiling, not per-thread work).
+  // Tc: K/V-column tiles split by Bc, Tr: Q-row tiles split by Br.
+  const int Tc = ceil((float)N / Bc);  // KV tiles
+  const int Tr = ceil((float)N / Br);  // Q tiles
   const float softmax_scale = 1.0 / sqrt(d);
 
   // Initialize O, l, m to HBM
