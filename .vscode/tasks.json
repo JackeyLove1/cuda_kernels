@@ -1,0 +1,31 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "CUDA: Build Current File",
+      "type": "shell",
+      "command": "nvcc",
+      "args": [
+        "-arch=sm_120",
+        "-std=c++17",
+        "-G",
+        "-g",
+        "-lineinfo",
+        "-O0",
+        "${fileBasename}",
+        "-o",
+        "main"
+      ],
+      "options": {
+        "cwd": "${fileDirname}"
+      },
+      "problemMatcher": [
+        "$gcc"
+      ],
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      }
+    }
+  ]
+}

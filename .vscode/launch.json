@@ -31,6 +31,42 @@
           "ignoreFailures": true
         }
       ]
+    },
+    {
+      "name": "CUDA: Build and Run Current File",
+      "type": "node-terminal",
+      "request": "launch",
+      "command": "cd \"${fileDirname}\" && rm -f main && nvcc -arch=sm_120 -std=c++17 -G -g -O3 \"${fileBasename}\" -o main && ./main"
+    },
+    {
+      "name": "CUDA: Debug Current File",
+      "type": "cppdbg",
+      "request": "launch",
+      "program": "${fileDirname}/main",
+      "args": [],
+      "stopAtEntry": false,
+      "cwd": "${fileDirname}",
+      "preLaunchTask": "CUDA: Build Current File",
+      "environment": [
+        {
+          "name": "LD_LIBRARY_PATH",
+          "value": "/usr/local/cuda/lib64:${env:LD_LIBRARY_PATH}"
+        },
+        {
+          "name": "CUDA_LAUNCH_BLOCKING",
+          "value": "1"
+        }
+      ],
+      "externalConsole": false,
+      "MIMode": "gdb",
+      "miDebuggerPath": "/usr/local/cuda/bin/cuda-gdb",
+      "setupCommands": [
+        {
+          "description": "Enable pretty-printing for gdb",
+          "text": "-enable-pretty-printing",
+          "ignoreFailures": true
+        }
+      ]
     }
   ]
 }
