@@ -100,10 +100,35 @@ void prefix_sum() {
 }
 
 void diff_num() {
-  
+  int n, m;
+  cin >> n >> m;
+  constexpr int N = 1e6 + 100;
+  int nums[N];
+  long diff[N];
+  auto insert = [&](int l, int r, int c) {
+    diff[l] += c;
+    diff[r + 1] -= c;
+  };
+  for(int i = 1; i <= n; ++i) {
+    cin >> nums[i];
+    insert(i, i, nums[i]);
+  }
+  for(int i = 0; i < m; ++i) {
+    int l, r, c;
+    cin >> l >> r >> c;
+    insert(l, r, c);
+  }
+  long sum = diff[0];
+  for(int i = 1; i <= n; ++i) {
+    sum += diff[i];
+    std::cout << sum << " ";
+  }
+  std::cout << std::endl;
 }
+
+
 int main() {
   fhj();
-  prefix_sum();
+  diff_num();
   return 0;
 }
