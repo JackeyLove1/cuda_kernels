@@ -77,9 +77,6 @@ void double_binary() {
   printf("%.6lf\n", l);
 }
 
-void big_add() {
-
-}
 
 void prefix_sum() {
   int n, m;
@@ -126,9 +123,115 @@ void diff_num() {
   std::cout << std::endl;
 }
 
+void nums_of_one() {
+  int n;
+  cin >> n;
+  constexpr int N = 1e5 + 100;
+  int nums[N];
+  for(int i = 0; i < n; ++i) {
+    cin >> nums[i];
+  }
+  for(int i = 0; i < n; ++i) {
+    int cnt = 0;
+    int x = nums[i];
+    while (x) {
+      cnt += (x & 1);
+      x >>= 1;
+    }
+    std::cout << cnt << " ";
+  }
+  std::cout << std::endl;
+}
+
+void longest_subarray() {
+  int n;
+  constexpr int N =  1e5 + 100;
+  int nums[N];
+  cin >> n;
+  for(int i = 0; i < n; ++i) {
+    cin >> nums[i];
+  }
+  unordered_set<int> s;
+  int l = 0, r = 0;
+  int res = 1;
+  while (r < n) {
+    if (!s.count(nums[r])) {
+      s.insert(nums[r]);
+      res = std::max(res, r - l +1);
+      ++r;
+    } else {
+      s.erase(nums[l]);
+      ++l;
+    }
+  }
+  std::cout << res << std::endl;
+}
+
+void target_sum() {
+  int n, m, x;
+  cin >> n >> m >> x;
+  constexpr int N =  1e5 + 100;
+  int A[N], B[N];
+  unordered_map<int, int> mp;
+  for(int i = 0; i < n; ++i) cin >> A[i], mp[A[i]] = i;
+  for(int i = 0; i < m; ++i) {
+    cin >> B[i];
+    auto iter = mp.find(x - B[i]);
+    if (iter != mp.end()) {
+      std::cout << iter->second << " " << i << std::endl;
+    }
+  }
+}
+
+void block_sum() {
+  int n, m;
+  constexpr int N =  1e5 + 100;
+  int nums[N];
+  cin >> n >> m;
+  for(int i = 0; i < n; ++i) {
+
+  }
+}
+
+void block_merge() {
+  int n;
+  constexpr int N = 1e5 + 100;
+  using Range = std::pair<int, int>;
+  std::vector<Range> ranges;
+  ranges.reserve(N);
+  cin >> n;
+  for(int i = 0; i < n ; ++i) {
+    int l, r;
+    cin >> l >> r;
+    ranges.emplace_back(l, r);
+  }
+  std::sort(ranges.begin(), ranges.end(), [](const Range& lhs, const Range& rhs) {
+    return lhs.first == rhs.first ? lhs.second < rhs.second : lhs.first < rhs.first;
+  });
+  int cnt = 0;
+  int curl = 0, curr = 0;
+  for(const auto& range : ranges) {
+    if (cnt == 0) {
+      ++cnt;
+      curl = range.first;
+      curr = range.second;
+    } else {
+      if (curr >= range.first) {
+        curr = std::max(curr, range.second);
+      } else {
+        ++cnt;
+        curl = range.first;
+        curr = range.second;
+      }
+    }
+  }
+  std::cout << cnt << std::endl;
+}
+
+
 
 int main() {
   fhj();
-  diff_num();
+  block_merge();
   return 0;
 }
