@@ -196,8 +196,18 @@ public:
 
 class Solution {
 public:
-  int maxProduct(vector<int>& nums) {
+  std::unordered_map<int, int> mp;
+
+  bool dp(int value, const std::vector<int>& nums) {
+
+  }
+
+  bool canPartition(vector<int>& nums) {
+    std::sort(nums.begin(), nums.end());
+    const auto sum = std::accumulate(nums.begin(), nums.end(), 0);
+    if (sum % 2 == 1) return false;
+    const auto target = sum / 2;
+    std::vector<int> f(200100, 0);
 
   }
 };
-
