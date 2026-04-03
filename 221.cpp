@@ -152,15 +152,42 @@ void v6() {
 
 void v7() {
   constexpr int N = 550;
+  constexpr int NEG_INF = -0x3f3f3f3f;
   std::array<std::array<int, N>, N> nums{}, f{};
+  for (auto& row : f) row.fill(NEG_INF);
   int n;
   cin >> n;
   for(int i = 1; i <= n; ++i) {
-    
+    for(int j = 1; j <= i; ++j) {
+      cin >> nums[i][j];
+      if (i == 1 && j == 1) f[i][j] = nums[i][j];
+      else f[i][j] = std::max(f[i-1][j], f[i-1][j-1]) + nums[i][j];
+    }
   }
+  int res = NEG_INF;
+  for(int i = 1; i <= n; ++i) res = std::max(res, f[n][i]);
+  std::cout << res << std::endl;
+}
+
+void v8() {
+  int n;
+  std::array<int, 1100> nums{}, f{};
+  f.fill(1);
+  cin >> n;
+  int res = 1;
+  for(int i = 1; i <= n; ++i) cin >> nums[i];
+  for(int i = 1; i <= n; ++i) {
+    for(int j = 1; j < i; ++j) {
+      if (nums[i] > nums[j]) {
+        f[i] = std::max(f[i], f[j] + 1);
+        res = std::max(res, f[i]);
+      }
+    }
+  }
+  std::cout << res << std::endl;
 }
 
 int main() {
   fhj();
-  v6();
+  v8();
 }
