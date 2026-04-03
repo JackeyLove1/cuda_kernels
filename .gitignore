@@ -233,3 +233,6 @@ cython_debug/
 .cursorignore
 .cursorindexingignore
 models/
+
+.claude/settings.json
+docs/
