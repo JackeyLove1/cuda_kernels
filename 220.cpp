@@ -180,7 +180,33 @@ void union_set2() {
   }
 }
 
+
+void str_hash() {
+  using ull = unsigned long long;
+  ull h[N], p[N];
+  char s[N];
+  constexpr int seed = 131;
+  int n, m;
+  cin >> n >> m;
+  p[0] = 1;
+  for(int i = 1; i <= n; ++i) {
+    cin >> s[i];
+    h[i] = h[i - 1] * seed + s[i];
+    p[i] = p[i - 1] * seed;
+  }
+  auto get = [&](int l, int r) {
+    return h[r] - h[l - 1] * p[r - l + 1];
+  };
+  for(int i = 0; i < m; ++i) {
+    int l1, r1, l2, r2;
+    cin >> l1 >> r1 >> l2 >> r2;
+    if (get(l1, r1) == get(l2, r2)) puts("Yes");
+    else puts("No");
+  }
+
+}
+
 int main() {
   fhj();
-  union_set2();
+  str_hash();
 }
