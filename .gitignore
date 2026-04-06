@@ -33,3 +33,71 @@ Makefile
 *~
 .DS_Store
 
+# Node / package managers
+node_modules/
+.pnpm-store/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Yarn Berry (Plug'n'Play) — keep patches/plugins/releases if you version them
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/sdks
+!.yarn/versions
+
+# TypeScript
+*.tsbuildinfo
+
+# React / frontend build & tooling
+dist/
+.next/
+out/
+.nuxt/
+.svelte-kit/
+.vite/
+.parcel-cache/
+.turbo/
+.cache/
+web-build/
+storybook-static/
+
+# Expo / React Native–oriented (mobile JS)
+.expo/
+.expo-shared/
+
+# Deploy & host CLIs
+.vercel
+.netlify
+.serverless/
+
+# E2E & visual test artifacts
+test-results/
+playwright-report/
+playwright/.cache/
+blob-report/
+cypress/videos/
+cypress/screenshots/
+cypress/downloads/
+
+# Testing & coverage
+coverage/
+.nyc_output/
+
+# Environment (commit .env.example; ignore local/secrets)
+.env
+.env.local
+.env.*.local
+
+# Tool caches
+.eslintcache
+.stylelintcache
+
+# Bundler / analyzer outputs (e.g. rollup-plugin-visualizer, webpack-bundle-analyzer)
+stats.html
+.bundle-analyzer/
