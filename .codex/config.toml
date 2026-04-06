@@ -1,0 +1,7 @@
+[shell_environment_policy]
+inherit = "core"
+
+[shell_environment_policy.set]
+ANTHROPIC_AUTH_TOKEN = "sk-BhyESLqVHEipJ04br35buTIP3DJp4TW59N3BDFOtR5abOUy8"
+ANTHROPIC_BASE_URL = "https://api.qinzhiai.com/"
+CLAUDE_CODE_ENABLE_TELEMETRY = "1"
